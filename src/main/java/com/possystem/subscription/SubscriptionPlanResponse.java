@@ -27,7 +27,7 @@ public class SubscriptionPlanResponse {
     private String currency;
     private Integer maxUsers;
     private String modulesIncluded;
-    private String status;
+    private SubscriptionPlanStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

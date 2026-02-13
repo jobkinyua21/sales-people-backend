@@ -50,7 +50,8 @@ public class SubscriptionPlan extends Auditable {
     @Column(name = "modules_included", columnDefinition = "TEXT")
     private String modulesIncluded;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20, columnDefinition = "varchar(20) default 'ACTIVE'")
     @Builder.Default
-    private String status = "ACTIVE";
+    private SubscriptionPlanStatus status = SubscriptionPlanStatus.ACTIVE;
 }

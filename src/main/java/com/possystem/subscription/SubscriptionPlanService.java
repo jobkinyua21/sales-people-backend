@@ -33,7 +33,7 @@ public class SubscriptionPlanService {
             plan = modelMapper.map(request, SubscriptionPlan.class);
             plan.setPlanCode(generatePlanCode());
             if (plan.getCurrency() == null) plan.setCurrency("KES");
-            if (plan.getStatus() == null) plan.setStatus("ACTIVE");
+            if (plan.getStatus() == null) plan.setStatus(SubscriptionPlanStatus.ACTIVE);
         }
 
         SubscriptionPlan saved = subscriptionPlanRepository.save(plan);

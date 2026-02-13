@@ -37,5 +37,5 @@ public class SubscriptionPlanRequest {
 
     private String modulesIncluded;
 
-    private String status;
+    private SubscriptionPlanStatus status;
 }
