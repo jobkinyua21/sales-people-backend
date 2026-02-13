@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -23,8 +24,8 @@ public class ApiResponse<T> {
     @Schema(description = "Response message", example = "Operation completed successfully")
     private String message;
 
-    @Schema(description = "Response data")
-    private T data;
+    @Schema(description = "Response data containing result")
+    private Map<String, T> data;
 
     @Schema(description = "HTTP status code", example = "200")
     private int status;
@@ -38,12 +39,17 @@ public class ApiResponse<T> {
     @Schema(description = "Error details (only present on validation errors)")
     private Object errors;
 
+    private static <T> Map<String, T> wrapResult(T result) {
+        if (result == null) return null;
+        return Map.of("result", result);
+    }
+
     // Success responses
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message("Operation completed successfully")
-                .data(data)
+                .data(wrapResult(data))
                 .status(200)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -53,7 +59,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message(message)
-                .data(data)
+                .data(wrapResult(data))
                 .status(200)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -63,7 +69,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message(message)
-                .data(data)
+                .data(wrapResult(data))
                 .status(status)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -73,7 +79,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message(message)
-                .data(data)
+                .data(wrapResult(data))
                 .status(201)
                 .timestamp(LocalDateTime.now())
                 .build();

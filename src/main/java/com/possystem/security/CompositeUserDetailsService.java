@@ -14,31 +14,13 @@ import org.springframework.stereotype.Service;
 public class CompositeUserDetailsService implements UserDetailsService {
 
     private final SystemUserDetailsService systemUserDetailsService;
-    private final PosUserDetailsService posUserDetailsService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Try system user first
-        try {
-            return systemUserDetailsService.loadUserByUsername(username);
-        } catch (UsernameNotFoundException e) {
-            log.debug("User not found in system users, trying POS users");
-        }
-
-        // Try POS user
-        try {
-            return posUserDetailsService.loadUserByUsername(username);
-        } catch (UsernameNotFoundException e) {
-            log.debug("User not found in POS users");
-        }
-
-        throw new UsernameNotFoundException("User not found: " + username);
+        return systemUserDetailsService.loadUserByUsername(username);
     }
 
     public UserDetails loadUserByUsernameAndType(String username, UserType userType) throws UsernameNotFoundException {
-        return switch (userType) {
-            case ADMIN, TENANT -> systemUserDetailsService.loadUserByUsername(username);
-            case POS -> posUserDetailsService.loadUserByUsername(username);
-        };
+        return systemUserDetailsService.loadUserByUsername(username);
     }
 }

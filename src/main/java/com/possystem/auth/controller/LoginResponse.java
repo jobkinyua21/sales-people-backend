@@ -13,21 +13,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RegisterResponse {
+public class LoginResponse {
+
+    private boolean otpRequired;
 
     private UUID usrId;
 
-    private UUID tenantId;
-
     private String email;
-
-    private String fullName;
-
-    private String userType;
-
-    private String status;
-
-    private String tenantCode;
-
-    private String businessName;
 }

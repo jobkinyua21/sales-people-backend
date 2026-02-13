@@ -18,7 +18,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username:noreply@possystem.com}")
+    @Value("${mail.from.email:${spring.mail.username}}")
     private String fromEmail;
 
     public void sendSimpleEmail(String to, String subject, String body) {

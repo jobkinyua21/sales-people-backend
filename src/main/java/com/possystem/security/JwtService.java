@@ -38,7 +38,7 @@ public class JwtService {
     }
 
     public UUID extractUserId(String token) {
-        String id = extractClaim(token, claims -> claims.get("userId", String.class));
+        String id = extractClaim(token, claims -> claims.get("usrId", String.class));
         return id != null ? UUID.fromString(id) : null;
     }
 
@@ -52,12 +52,11 @@ public class JwtService {
 
         if (userDetails instanceof UserPrincipal principal) {
             extraClaims.put("userType", principal.getUserType().name());
-            extraClaims.put("userId", principal.getId().toString());
-        } else if (userDetails instanceof PosUserPrincipal principal) {
-            extraClaims.put("userType", UserType.POS.name());
-            extraClaims.put("userId", principal.getId().toString());
-            extraClaims.put("tenantId", principal.getTenantId().toString());
-            extraClaims.put("shopId", principal.getShopId().toString());
+            extraClaims.put("usrId", principal.getId().toString());
+            extraClaims.put("email", principal.getEmail());
+            extraClaims.put("phoneNumber", principal.getPhoneNumber());
+            extraClaims.put("firstName", principal.getFirstName());
+            extraClaims.put("lastName", principal.getLastName());
         }
 
         return buildToken(extraClaims, userDetails, jwtExpiration);
@@ -68,12 +67,7 @@ public class JwtService {
 
         if (userDetails instanceof UserPrincipal principal) {
             extraClaims.put("userType", principal.getUserType().name());
-            extraClaims.put("userId", principal.getId().toString());
-        } else if (userDetails instanceof PosUserPrincipal principal) {
-            extraClaims.put("userType", UserType.POS.name());
-            extraClaims.put("userId", principal.getId().toString());
-            extraClaims.put("tenantId", principal.getTenantId().toString());
-            extraClaims.put("shopId", principal.getShopId().toString());
+            extraClaims.put("usrId", principal.getId().toString());
         }
 
         return buildToken(extraClaims, userDetails, refreshExpiration);

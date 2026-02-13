@@ -102,6 +102,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ErrorCode.INVALID_REQUEST, HttpStatus.BAD_REQUEST.value()));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException ex) {
+        ErrorCode errorCode = determineIllegalStateErrorCode(ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiResponse.error(errorCode, ex.getMessage(), HttpStatus.TOO_MANY_REQUESTS.value()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         ErrorCode errorCode = determineIllegalArgumentErrorCode(ex.getMessage());
@@ -155,6 +163,15 @@ public class GlobalExceptionHandler {
         if (message.contains("Shop is not active")) return ErrorCode.SHOP_INACTIVE;
 
         return ErrorCode.ACCOUNT_DISABLED;
+    }
+
+    private ErrorCode determineIllegalStateErrorCode(String message) {
+        if (message == null) return ErrorCode.VALIDATION_ERROR;
+
+        if (message.contains("Too many OTP requests")) return ErrorCode.OTP_RATE_LIMIT;
+        if (message.contains("Too many wrong attempts")) return ErrorCode.OTP_MAX_ATTEMPTS;
+
+        return ErrorCode.VALIDATION_ERROR;
     }
 
     private ErrorCode determineIllegalArgumentErrorCode(String message) {

@@ -112,7 +112,7 @@ Content-Type: application/json
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "tokenType": "Bearer",
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
+  "usrId": "123e4567-e89b-12d3-a456-426614174000",
   "username": "john",
   "roles": ["USER"],
   "permissions": {}

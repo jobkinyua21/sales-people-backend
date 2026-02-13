@@ -5,6 +5,7 @@ import com.possystem.common.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -23,8 +24,11 @@ public class Tenant extends Auditable {
     @EqualsAndHashCode.Include
     private UUID tenantId;
 
+    @Column(name = "tenant_code", unique = true, nullable = false, length = 20)
+    private String tenantCode;
+
     @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    private UUID usrId;
 
     @Column(name = "business_name", nullable = false, length = 100)
     private String businessName;
@@ -44,6 +48,12 @@ public class Tenant extends Auditable {
     @Column(name = "business_phone", length = 20)
     private String businessPhone;
 
+    @Column(name = "email", unique = true, length = 100)
+    private String email;
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
     @Column(name = "country", length = 50)
     private String country;
 
@@ -52,6 +62,15 @@ public class Tenant extends Auditable {
 
     @Column(name = "logo_url", length = 255)
     private String logoUrl;
+
+    @Column(name = "subscription_plan", length = 50)
+    private String subscriptionPlan;
+
+    @Column(name = "subscription_status", length = 30)
+    private String subscriptionStatus;
+
+    @Column(name = "subscription_expires_at")
+    private LocalDateTime subscriptionExpiresAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

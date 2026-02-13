@@ -23,9 +23,15 @@ public class User extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "user_id")
+    @Column(name = "usr_id")
     @EqualsAndHashCode.Include
     private UUID usrId;
+
+    @Column(name = "tenant_id")
+    private UUID tenantId;
+
+    @Column(name = "username", unique = true)
+    private String username;
 
     @Column(name = "email", unique = true)
     private String usrEmail;
@@ -39,6 +45,39 @@ public class User extends Auditable {
     @Column(name = "last_name", nullable = false)
     private String usrLastName;
 
+    @JsonIgnore
+    @Column(name = "password")
+    private String usrPassword;
+
+    @JsonIgnore
+    @Column(name = "password_salt")
+    private String passwordSalt;
+
+    @Column(name = "password_version")
+    @Builder.Default
+    private Integer passwordVersion = 1;
+
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
+    @Column(name = "password_expires_at")
+    private LocalDateTime passwordExpiresAt;
+
+    @Column(name = "must_change_password", nullable = false)
+    @Builder.Default
+    private Boolean mustChangePassword = false;
+
+    @Column(name = "failed_login_attempts", nullable = false, columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
+    @JsonIgnore
+    @Column(name = "pin")
+    private String usrPin;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     @Builder.Default
@@ -47,22 +86,23 @@ public class User extends Auditable {
     @Enumerated(EnumType.STRING)
     @Column(name = "user_type", nullable = false)
     @Builder.Default
-    private UserType userType = UserType.TENANT;
+    private UserType userType = UserType.TENANT_ADMIN;
 
-    @JsonIgnore
-    @Column(name = "password")
-    private String usrPassword;
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private Boolean emailVerified = false;
 
-    @JsonIgnore
-    @Column(name = "pin")
-    private String usrPin;
+    @Column(name = "email_verification_token")
+    private String emailVerificationToken;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "profile_id", referencedColumnName = "profile_id")
-    private Profile profile;
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
 
     @Column(name = "last_login")
     private LocalDateTime usrLastLogin;
+
+    @Column(name = "last_login_ip")
+    private String lastLoginIp;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
