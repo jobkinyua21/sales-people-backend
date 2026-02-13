@@ -51,3 +51,5 @@ SELECT 'Password Reset', 'OTP sent during forgot password flow',
 'Password Reset - Verification Code',
 'PASSWORD_RESET', 'ACTIVE', NULL, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM pos_core.message_template WHERE mst_type = 'PASSWORD_RESET');
+
+ 

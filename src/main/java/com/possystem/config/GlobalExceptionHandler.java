@@ -16,9 +16,12 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -123,8 +126,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(
             org.springframework.dao.DataIntegrityViolationException ex) {
+        log.error("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
         ErrorCode errorCode = ErrorCode.DUPLICATE_ENTRY;
-        String message = ex.getMessage();
+        String message = ex.getMostSpecificCause().getMessage();
 
         if (message != null) {
             if (message.contains("email")) {
@@ -138,7 +142,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(errorCode, HttpStatus.CONFLICT.value()));
+                .body(ApiResponse.error(errorCode, message, HttpStatus.CONFLICT.value()));
     }
 
     // ==================== 500 INTERNAL SERVER ERROR ====================
