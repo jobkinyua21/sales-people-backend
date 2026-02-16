@@ -47,10 +47,17 @@ public enum ErrorCode {
     PHONE_EXISTS("CONF_003", "Phone number already registered"),
     BUSINESS_REG_EXISTS("CONF_004", "Business registration number already exists"),
 
+    // 409 - Role Conflicts
+    ROLE_IN_USE("CONF_005", "Role is assigned to users and cannot be deleted"),
+    SYSTEM_ROLE_IMMUTABLE("CONF_006", "System roles cannot be modified or deleted"),
+    DUPLICATE_ROLE_NAME("CONF_007", "A role with this name already exists"),
+
     // 404 - Not Found Errors
     RESOURCE_NOT_FOUND("NF_001", "Requested resource not found"),
     USER_NOT_FOUND("NF_002", "User not found"),
     SHOP_NOT_FOUND("NF_003", "Shop not found"),
+    ROLE_NOT_FOUND("NF_004", "Role not found"),
+    PERMISSION_NOT_FOUND("NF_005", "Permission not found"),
 
     // 500 - Server Errors
     INTERNAL_ERROR("SRV_001", "An unexpected error occurred"),

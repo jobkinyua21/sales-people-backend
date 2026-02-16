@@ -57,6 +57,9 @@ public class JwtService {
             extraClaims.put("phoneNumber", principal.getPhoneNumber());
             extraClaims.put("firstName", principal.getFirstName());
             extraClaims.put("lastName", principal.getLastName());
+            if (principal.getRoleId() != null) {
+                extraClaims.put("roleId", principal.getRoleId().toString());
+            }
         }
 
         return buildToken(extraClaims, userDetails, jwtExpiration);

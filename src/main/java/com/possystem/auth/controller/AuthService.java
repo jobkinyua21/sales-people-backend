@@ -6,6 +6,7 @@ import com.possystem.auth.user.UserRepository;
 import com.possystem.common.OtpService;
 import com.possystem.common.UserStatus;
 import com.possystem.common.UserType;
+import com.possystem.role.RoleService;
 import com.possystem.security.JwtService;
 import com.possystem.security.UserPrincipal;
 import com.possystem.tenant.Tenant;
@@ -36,6 +37,7 @@ public class AuthService {
     private final UserSessionService userSessionService;
     private final EmailVerificationService emailVerificationService;
     private final OtpService otpService;
+    private final RoleService roleService;
 
     @Value("${security.password-expiry-days:90}")
     private int passwordExpiryDays;
@@ -238,6 +240,12 @@ public class AuthService {
 
         // Link user to tenant
         savedUser.setTenantId(savedTenant.getTenantId());
+
+        // Create system roles (Admin, Viewer) and assign Admin to this user
+        roleService.createSystemRolesForTenant(savedTenant.getTenantId());
+        UUID adminRoleId = roleService.getAdminRoleId(savedTenant.getTenantId());
+        savedUser.setRoleId(adminRoleId);
+
         userRepository.save(savedUser);
 
         return RegisterResponse.builder()
@@ -306,6 +314,12 @@ public class AuthService {
 
         // Link user to tenant
         savedUser.setTenantId(savedTenant.getTenantId());
+
+        // Create system roles (Admin, Viewer) and assign Admin to this user
+        roleService.createSystemRolesForTenant(savedTenant.getTenantId());
+        UUID adminRoleId = roleService.getAdminRoleId(savedTenant.getTenantId());
+        savedUser.setRoleId(adminRoleId);
+
         userRepository.save(savedUser);
 
         return RegisterResponse.builder()

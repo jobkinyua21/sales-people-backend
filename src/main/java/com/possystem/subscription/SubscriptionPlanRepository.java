@@ -21,8 +21,11 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
             "LOWER(sp.planName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(sp.planType) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(sp.billingLevel) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(sp.status) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(sp.currency) LIKE LOWER(CONCAT('%', :search, '%')))")
+            "LOWER(CAST(sp.status AS string)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(sp.currency) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(sp.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(sp.reportLevel) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY sp.createdAt DESC")
     Page<SubscriptionPlan> searchAll(@Param("search") String search, Pageable pageable);
 
     @Query("SELECT sp FROM SubscriptionPlan sp WHERE " +
@@ -31,7 +34,10 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
             "LOWER(sp.planName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(sp.planType) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(sp.billingLevel) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(sp.status) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(sp.currency) LIKE LOWER(CONCAT('%', :search, '%')))")
+            "LOWER(CAST(sp.status AS string)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(sp.currency) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(sp.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(sp.reportLevel) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY sp.createdAt DESC")
     List<SubscriptionPlan> searchAll(@Param("search") String search);
 }

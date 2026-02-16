@@ -9,16 +9,15 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 public class UserPrincipal implements UserDetails {
 
     private final UUID id;
     private final UUID tenantId;
+    private final UUID shopId;
+    private final UUID roleId;
     private final String email;
     private final String phoneNumber;
     private final String password;
@@ -31,8 +30,14 @@ public class UserPrincipal implements UserDetails {
     private final Set<GrantedAuthority> authorities;
 
     public UserPrincipal(User user) {
+        this(user, List.of());
+    }
+
+    public UserPrincipal(User user, List<String> permissionCodes) {
         this.id = user.getUsrId();
         this.tenantId = user.getTenantId();
+        this.shopId = user.getShopId();
+        this.roleId = user.getRoleId();
         this.email = user.getUsrEmail();
         this.phoneNumber = user.getUsrPhoneNumber();
         this.password = user.getUsrPassword();
@@ -42,14 +47,19 @@ public class UserPrincipal implements UserDetails {
         this.userType = user.getUserType() != null ? user.getUserType() : UserType.TENANT_ADMIN;
         this.lockedUntil = user.getLockedUntil();
         this.passwordExpiresAt = user.getPasswordExpiresAt();
-        this.authorities = buildAuthorities(user);
+        this.authorities = buildAuthorities(user, permissionCodes);
     }
 
-    private Set<GrantedAuthority> buildAuthorities(User user) {
+    private Set<GrantedAuthority> buildAuthorities(User user, List<String> permissionCodes) {
         Set<GrantedAuthority> authorities = new HashSet<>();
 
         UserType type = user.getUserType() != null ? user.getUserType() : UserType.TENANT_ADMIN;
         authorities.add(new SimpleGrantedAuthority("ROLE_" + type.name()));
+
+        // Add permission-based authorities
+        for (String code : permissionCodes) {
+            authorities.add(new SimpleGrantedAuthority(code));
+        }
 
         return authorities;
     }

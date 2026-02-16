@@ -1,11 +1,11 @@
 package com.possystem.subscription;
 
+import com.possystem.common.FetchRequest;
 import com.possystem.common.ListResponse;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,15 +40,19 @@ public class SubscriptionPlanService {
         return modelMapper.map(saved, SubscriptionPlanResponse.class);
     }
 
-    public SubscriptionPlanResponse getById(UUID id) {
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Subscription plan not found"));
-        return modelMapper.map(plan, SubscriptionPlanResponse.class);
-    }
+    public ListResponse<SubscriptionPlanResponse> fetch(FetchRequest request) {
+        // Filter by id
+        if (request.getId() != null) {
+            SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Subscription plan not found"));
+            List<SubscriptionPlanResponse> result = List.of(modelMapper.map(plan, SubscriptionPlanResponse.class));
+            return ListResponse.of(result);
+        }
 
-    public ListResponse<SubscriptionPlanResponse> fetch(int start, Integer limit, String search) {
+        String search = request.getSearch();
+        Integer limit = request.getLimit();
+
         if (limit == null) {
-            // Fetch all without pagination
             List<SubscriptionPlan> all = subscriptionPlanRepository.searchAll(search);
             List<SubscriptionPlanResponse> responses = all.stream()
                     .map(plan -> modelMapper.map(plan, SubscriptionPlanResponse.class))
@@ -56,7 +60,7 @@ public class SubscriptionPlanService {
             return ListResponse.of(responses);
         }
 
-        PageRequest pageRequest = PageRequest.of(start, limit);
+        PageRequest pageRequest = PageRequest.of(request.getStart(), limit);
         Page<SubscriptionPlan> page = subscriptionPlanRepository.searchAll(search, pageRequest);
 
         Page<SubscriptionPlanResponse> responsePage = page.map(

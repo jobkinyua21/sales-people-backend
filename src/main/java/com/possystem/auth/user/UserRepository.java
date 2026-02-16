@@ -1,8 +1,14 @@
 package com.possystem.auth.user;
 
+import com.possystem.common.UserType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,4 +30,32 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByUsername(String username);
 
     Optional<User> findByEmailVerificationToken(String token);
+
+    Optional<User> findByShopIdAndUserType(UUID shopId, UserType userType);
+
+    @Query("SELECT u FROM User u WHERE u.shopId = :shopId AND " +
+            "(:search IS NULL OR :search = '' OR " +
+            "LOWER(u.usrFirstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.usrLastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.usrEmail) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.usrPhoneNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(u.userType AS string)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(u.usrStatus AS string)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY u.createdAt DESC")
+    Page<User> searchByShopId(@Param("shopId") UUID shopId, @Param("search") String search, Pageable pageable);
+
+    @Query("SELECT u FROM User u WHERE u.shopId = :shopId AND " +
+            "(:search IS NULL OR :search = '' OR " +
+            "LOWER(u.usrFirstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.usrLastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.usrEmail) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.usrPhoneNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(u.userType AS string)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(u.usrStatus AS string)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY u.createdAt DESC")
+    List<User> searchByShopId(@Param("shopId") UUID shopId, @Param("search") String search);
+
+    long countByRoleId(UUID roleId);
 }

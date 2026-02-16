@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -25,8 +26,14 @@ public class SubscriptionPlanResponse {
     private BigDecimal priceMonthly;
     private BigDecimal priceYearly;
     private String currency;
+    private String description;
     private Integer maxUsers;
-    private String modulesIncluded;
+    private Integer maxProducts;
+    private Integer maxTerminals;
+    private Integer maxCustomers;
+    private Integer maxShops;
+    private String reportLevel;
+    private List<String> modulesIncluded;
     private SubscriptionPlanStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

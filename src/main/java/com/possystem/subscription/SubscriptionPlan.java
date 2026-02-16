@@ -1,10 +1,12 @@
 package com.possystem.subscription;
 
 import com.possystem.audit.Auditable;
+import com.possystem.common.StringListConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -44,11 +46,30 @@ public class SubscriptionPlan extends Auditable {
     @Builder.Default
     private String currency = "KES";
 
+    @Column(name = "description", length = 255)
+    private String description;
+
     @Column(name = "max_users")
     private Integer maxUsers;
 
+    @Column(name = "max_products")
+    private Integer maxProducts;
+
+    @Column(name = "max_terminals")
+    private Integer maxTerminals;
+
+    @Column(name = "max_customers")
+    private Integer maxCustomers;
+
+    @Column(name = "max_shops")
+    private Integer maxShops;
+
+    @Column(name = "report_level", length = 30)
+    private String reportLevel;
+
+    @Convert(converter = StringListConverter.class)
     @Column(name = "modules_included", columnDefinition = "TEXT")
-    private String modulesIncluded;
+    private List<String> modulesIncluded;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20, columnDefinition = "varchar(20) default 'ACTIVE'")

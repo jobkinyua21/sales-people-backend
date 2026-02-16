@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -33,9 +34,21 @@ public class SubscriptionPlanRequest {
     @NotNull(message = "Yearly price is required")
     private BigDecimal priceYearly;
 
+    private String description;
+
     private Integer maxUsers;
 
-    private String modulesIncluded;
+    private Integer maxProducts;
+
+    private Integer maxTerminals;
+
+    private Integer maxCustomers;
+
+    private Integer maxShops;
+
+    private String reportLevel;
+
+    private List<String> modulesIncluded;
 
     private SubscriptionPlanStatus status;
 }

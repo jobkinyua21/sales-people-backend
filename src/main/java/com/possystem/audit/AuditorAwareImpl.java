@@ -1,28 +1,30 @@
 package com.possystem.audit;
 
+import com.possystem.security.UserPrincipal;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
-public class AuditorAwareImpl implements AuditorAware<String> {
+public class AuditorAwareImpl implements AuditorAware<UUID> {
 
     @Override
-    public Optional<String> getCurrentAuditor() {
+    public Optional<UUID> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.of("SYSTEM");
+            return Optional.empty();
         }
 
-        String principal = authentication.getName();
-        if (principal == null || principal.equals("anonymousUser")) {
-            return Optional.of("SYSTEM");
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserPrincipal userPrincipal) {
+            return Optional.of(userPrincipal.getId());
         }
 
-        return Optional.of(principal);
+        return Optional.empty();
     }
 }

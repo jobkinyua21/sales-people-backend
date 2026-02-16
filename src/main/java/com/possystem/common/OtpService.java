@@ -68,6 +68,8 @@ public class OtpService {
 
         otpVerificationRepository.save(otp);
 
+        log.info("OTP code for {} (user {}): {}", email, usrId, otpCode);
+
         // Send OTP via email template
         AlertDTO alert = AlertDTO.builder()
                 .email(email)
