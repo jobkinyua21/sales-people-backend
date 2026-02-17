@@ -36,7 +36,7 @@ public class UserPrincipal implements UserDetails {
     public UserPrincipal(User user, List<String> permissionCodes) {
         this.id = user.getUsrId();
         this.tenantId = user.getTenantId();
-        this.shopId = user.getShopId();
+        this.shopId = null; // shopId comes from assignment/context, not User entity
         this.roleId = user.getRoleId();
         this.email = user.getUsrEmail();
         this.phoneNumber = user.getUsrPhoneNumber();
@@ -102,5 +102,29 @@ public class UserPrincipal implements UserDetails {
 
     public String getFullName() {
         return (firstName != null ? firstName + " " : "") + (lastName != null ? lastName : "");
+    }
+
+    /**
+     * Creates a copy of this principal with an overridden shopId (used for shop context switching).
+     */
+    public UserPrincipal withShopId(UUID newShopId) {
+        return new UserPrincipal(this, newShopId);
+    }
+
+    private UserPrincipal(UserPrincipal source, UUID overrideShopId) {
+        this.id = source.id;
+        this.tenantId = source.tenantId;
+        this.shopId = overrideShopId;
+        this.roleId = source.roleId;
+        this.email = source.email;
+        this.phoneNumber = source.phoneNumber;
+        this.password = source.password;
+        this.firstName = source.firstName;
+        this.lastName = source.lastName;
+        this.status = source.status;
+        this.userType = source.userType;
+        this.lockedUntil = source.lockedUntil;
+        this.passwordExpiresAt = source.passwordExpiresAt;
+        this.authorities = source.authorities;
     }
 }

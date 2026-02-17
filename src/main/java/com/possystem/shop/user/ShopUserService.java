@@ -6,7 +6,6 @@ import com.possystem.common.*;
 import com.possystem.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,7 +26,7 @@ public class ShopUserService {
 
     private final UserRepository userRepository;
     private final ShopRepository shopRepository;
-    private final ModelMapper modelMapper;
+    private final UserShopAssignmentRepository userShopAssignmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
@@ -65,7 +64,6 @@ public class ShopUserService {
 
         User user = User.builder()
                 .tenantId(tenantId)
-                .shopId(shopId)
                 .roleId(request.getRoleId())
                 .username(username)
                 .usrFirstName(request.getFirstName())
@@ -86,6 +84,15 @@ public class ShopUserService {
 
         User savedUser = userRepository.save(user);
 
+        // Create shop assignment
+        UserShopAssignment assignment = UserShopAssignment.builder()
+                .userId(savedUser.getUsrId())
+                .shopId(shopId)
+                .roleId(request.getRoleId())
+                .shopRole(UserType.SHOP_USER)
+                .build();
+        userShopAssignmentRepository.save(assignment);
+
         // Get shop name for the email
         String shopName = shopRepository.findById(shopId)
                 .map(Shop::getShopName)
@@ -93,14 +100,14 @@ public class ShopUserService {
 
         sendUserCredentialsEmail(savedUser, randomPassword, shopName);
 
-        return buildShopUserResponse(savedUser, shopName);
+        return buildShopUserResponse(savedUser, shopId, shopName);
     }
 
     private ShopUserResponse updateShopUser(ShopUserRequest request, UUID shopId) {
         User user = userRepository.findById(request.getId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (!shopId.equals(user.getShopId())) {
+        if (!userShopAssignmentRepository.existsByUserIdAndShopIdAndIsActiveTrue(user.getUsrId(), shopId)) {
             throw new IllegalArgumentException("User does not belong to your shop");
         }
 
@@ -108,8 +115,16 @@ public class ShopUserService {
         user.setUsrLastName(request.getLastName());
         user.setUsrEmail(request.getEmail());
         user.setUsrPhoneNumber(request.getPhone());
+
+        // Update assignment role if provided
         if (request.getRoleId() != null) {
-            user.setRoleId(request.getRoleId());
+            UserShopAssignment assignment = userShopAssignmentRepository
+                    .findByUserIdAndShopIdAndIsActiveTrue(user.getUsrId(), shopId)
+                    .orElse(null);
+            if (assignment != null) {
+                assignment.setRoleId(request.getRoleId());
+                userShopAssignmentRepository.save(assignment);
+            }
         }
 
         User savedUser = userRepository.save(user);
@@ -118,7 +133,7 @@ public class ShopUserService {
                 .map(Shop::getShopName)
                 .orElse("Your Shop");
 
-        return buildShopUserResponse(savedUser, shopName);
+        return buildShopUserResponse(savedUser, shopId, shopName);
     }
 
     public ListResponse<ShopUserResponse> fetch(FetchRequest request) {
@@ -136,10 +151,10 @@ public class ShopUserService {
         if (request.getId() != null) {
             User user = userRepository.findById(request.getId())
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
-            if (!shopId.equals(user.getShopId())) {
+            if (!userShopAssignmentRepository.existsByUserIdAndShopIdAndIsActiveTrue(user.getUsrId(), shopId)) {
                 throw new IllegalArgumentException("User does not belong to your shop");
             }
-            List<ShopUserResponse> result = List.of(buildShopUserResponse(user, shopName));
+            List<ShopUserResponse> result = List.of(buildShopUserResponse(user, shopId, shopName));
             return ListResponse.of(result);
         }
 
@@ -147,16 +162,16 @@ public class ShopUserService {
         Integer limit = request.getLimit();
 
         if (limit == null) {
-            List<User> all = userRepository.searchByShopId(shopId, search);
+            List<User> all = userRepository.searchByShopAssignment(shopId, search);
             List<ShopUserResponse> responses = all.stream()
-                    .map(u -> buildShopUserResponse(u, shopName))
+                    .map(u -> buildShopUserResponse(u, shopId, shopName))
                     .toList();
             return ListResponse.of(responses);
         }
 
         PageRequest pageRequest = PageRequest.of(request.getStart(), limit);
-        Page<User> page = userRepository.searchByShopId(shopId, search, pageRequest);
-        Page<ShopUserResponse> responsePage = page.map(u -> buildShopUserResponse(u, shopName));
+        Page<User> page = userRepository.searchByShopAssignment(shopId, search, pageRequest);
+        Page<ShopUserResponse> responsePage = page.map(u -> buildShopUserResponse(u, shopId, shopName));
         return ListResponse.from(responsePage);
     }
 
@@ -165,23 +180,37 @@ public class ShopUserService {
         UserPrincipal principal = getCurrentPrincipal();
         UUID shopId = principal.getShopId();
 
+        if (shopId == null) {
+            throw new IllegalArgumentException("You are not assigned to a shop");
+        }
+
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (!shopId.equals(user.getShopId())) {
-            throw new IllegalArgumentException("User does not belong to your shop");
-        }
+        UserShopAssignment assignment = userShopAssignmentRepository
+                .findByUserIdAndShopIdAndIsActiveTrue(user.getUsrId(), shopId)
+                .orElseThrow(() -> new IllegalArgumentException("User does not belong to your shop"));
 
-        if (user.getUserType() == UserType.SHOP_MANAGER) {
+        if (assignment.getShopRole() == UserType.SHOP_MANAGER) {
             throw new IllegalArgumentException("Cannot delete shop manager");
         }
 
-        userRepository.delete(user);
+        // Deactivate the assignment (remove from this shop)
+        assignment.setIsActive(false);
+        userShopAssignmentRepository.save(assignment);
+
+        // If no remaining active assignments, deactivate the user
+        long remainingAssignments = userShopAssignmentRepository.countByUserIdAndIsActiveTrue(user.getUsrId());
+        if (remainingAssignments == 0) {
+            user.setIsActive(false);
+            user.setUsrStatus(UserStatus.INACTIVE);
+            userRepository.save(user);
+        }
     }
 
     // ==================== HELPERS ====================
 
-    private ShopUserResponse buildShopUserResponse(User user, String shopName) {
+    private ShopUserResponse buildShopUserResponse(User user, UUID shopId, String shopName) {
         return ShopUserResponse.builder()
                 .id(user.getUsrId())
                 .username(user.getUsername())
@@ -192,7 +221,7 @@ public class ShopUserService {
                 .userType(user.getUserType())
                 .status(user.getUsrStatus())
                 .roleId(user.getRoleId())
-                .shopId(user.getShopId())
+                .shopId(shopId)
                 .shopName(shopName)
                 .lastLogin(user.getUsrLastLogin())
                 .createdAt(user.getCreatedAt())

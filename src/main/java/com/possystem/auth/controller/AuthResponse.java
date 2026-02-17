@@ -37,5 +37,9 @@ public class AuthResponse {
 
     private UUID sessionId;
 
+    private UUID shopId;
+
+    private String shopName;
+
     private Boolean mustChangePassword;
 }

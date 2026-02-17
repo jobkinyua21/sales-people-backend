@@ -42,6 +42,26 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response, "OTP sent to your email"));
     }
 
+    // ==================== SHOP SELECTION (MULTI-SHOP USERS) ====================
+
+    @Operation(
+            summary = "Select Shop",
+            description = "For users assigned to multiple shops: after login returns a shop list, " +
+                    "the user selects a shop. This triggers an OTP to be sent. " +
+                    "Then proceed to verify-otp as usual."
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP sent to email"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid shop selection", content = @Content)
+    })
+    @PostMapping("/select-shop")
+    public ResponseEntity<ApiResponse<LoginResponse>> selectShop(
+            @Valid @RequestBody SelectShopRequest request,
+            HttpServletRequest httpRequest) {
+        LoginResponse response = authService.selectShop(request, httpRequest);
+        return ResponseEntity.ok(ApiResponse.success(response, "OTP sent to your email"));
+    }
+
     // ==================== OTP VERIFICATION ====================
 
     @Operation(
@@ -87,6 +107,22 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authorizationHeader) {
         authService.logout(authorizationHeader);
         return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"));
+    }
+
+    // ==================== SHOP CONTEXT SWITCH ====================
+
+    @Operation(
+            summary = "Switch Shop Context",
+            description = "Allows a TENANT_ADMIN to switch into a specific shop context. " +
+                    "Returns new tokens with the shop embedded. All subsequent API calls will operate within that shop."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PostMapping("/switch-shop")
+    public ResponseEntity<ApiResponse<AuthResponse>> switchShop(
+            @Valid @RequestBody SwitchShopRequest request,
+            HttpServletRequest httpRequest) {
+        AuthResponse response = authService.switchShop(request, httpRequest);
+        return ResponseEntity.ok(ApiResponse.success(response, "Switched to shop: " + response.getShopName()));
     }
 
     // ==================== REGISTRATION ====================

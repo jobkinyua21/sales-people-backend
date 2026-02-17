@@ -45,6 +45,11 @@ public class OtpService {
 
     @Transactional
     public void createAndSendOtp(UUID usrId, String email, String firstName, String userType, String ipAddress) {
+        createAndSendOtp(usrId, email, firstName, userType, ipAddress, null);
+    }
+
+    @Transactional
+    public void createAndSendOtp(UUID usrId, String email, String firstName, String userType, String ipAddress, UUID selectedShopId) {
         // Rate limit: max N OTP requests within the configured window
         LocalDateTime rateLimitWindow = LocalDateTime.now().minusMinutes(otpRateLimitMinutes);
         long recentOtpCount = otpVerificationRepository.countByUsrIdAndCreatedAtAfter(usrId, rateLimitWindow);
@@ -64,6 +69,7 @@ public class OtpService {
                 .email(email)
                 .expiresAt(LocalDateTime.now().plusMinutes(otpExpiryMinutes))
                 .ipAddress(ipAddress)
+                .selectedShopId(selectedShopId)
                 .build();
 
         otpVerificationRepository.save(otp);

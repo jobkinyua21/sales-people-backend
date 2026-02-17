@@ -3,12 +3,18 @@ package com.possystem.auth.controller;
 import com.possystem.auth.security.*;
 import com.possystem.auth.user.User;
 import com.possystem.auth.user.UserRepository;
+import com.possystem.common.ErrorCode;
 import com.possystem.common.OtpService;
 import com.possystem.common.UserStatus;
 import com.possystem.common.UserType;
+import com.possystem.role.RolePermissionRepository;
 import com.possystem.role.RoleService;
 import com.possystem.security.JwtService;
 import com.possystem.security.UserPrincipal;
+import com.possystem.shop.Shop;
+import com.possystem.shop.ShopRepository;
+import com.possystem.shop.UserShopAssignment;
+import com.possystem.shop.UserShopAssignmentRepository;
 import com.possystem.tenant.Tenant;
 import com.possystem.tenant.TenantRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,11 +23,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -30,6 +38,9 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
+    private final ShopRepository shopRepository;
+    private final RolePermissionRepository rolePermissionRepository;
+    private final UserShopAssignmentRepository userShopAssignmentRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
@@ -78,13 +89,85 @@ public class AuthService {
         loginAttemptService.recordLoginAttempt(user.getUsrId(), user.getUsername(),
                 user.getUsrEmail(), true, ipAddress, userAgent, null);
 
-        // Generate and send OTP instead of tokens
+        // Branch by user type for shop selection
+        if (user.getUserType() == UserType.SYSTEM_OWNER || user.getUserType() == UserType.TENANT_ADMIN) {
+            // No shop selection needed — send OTP immediately
+            otpService.createAndSendOtp(
+                    user.getUsrId(), user.getUsrEmail(), user.getUsrFirstName(),
+                    user.getUserType().name(), ipAddress
+            );
+
+            return LoginResponse.builder()
+                    .otpRequired(true)
+                    .usrId(user.getUsrId())
+                    .email(maskEmail(user.getUsrEmail()))
+                    .build();
+        }
+
+        // SHOP_MANAGER or SHOP_USER — check shop assignments
+        List<UserShopAssignment> assignments = userShopAssignmentRepository
+                .findByUserIdAndIsActiveTrue(user.getUsrId());
+
+        if (assignments.isEmpty()) {
+            throw new IllegalArgumentException(ErrorCode.NO_SHOP_ASSIGNMENT.getDefaultMessage());
+        }
+
+        if (assignments.size() == 1) {
+            // Single shop — send OTP immediately with shop context
+            UUID shopId = assignments.get(0).getShopId();
+            otpService.createAndSendOtp(
+                    user.getUsrId(), user.getUsrEmail(), user.getUsrFirstName(),
+                    user.getUserType().name(), ipAddress, shopId
+            );
+
+            return LoginResponse.builder()
+                    .otpRequired(true)
+                    .usrId(user.getUsrId())
+                    .email(maskEmail(user.getUsrEmail()))
+                    .build();
+        }
+
+        // Multiple shops — return shop list for selection, DO NOT send OTP yet
+        List<ShopInfo> shopInfos = assignments.stream()
+                .map(a -> {
+                    Shop shop = shopRepository.findById(a.getShopId()).orElse(null);
+                    if (shop == null) return null;
+                    return ShopInfo.builder()
+                            .shopId(shop.getId())
+                            .shopName(shop.getShopName())
+                            .shopCode(shop.getShopCode())
+                            .shopRole(a.getShopRole())
+                            .build();
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        return LoginResponse.builder()
+                .shopSelectionRequired(true)
+                .usrId(user.getUsrId())
+                .email(maskEmail(user.getUsrEmail()))
+                .shops(shopInfos)
+                .build();
+    }
+
+    // ==================== SHOP SELECTION (MULTI-SHOP USERS) ====================
+
+    @Transactional
+    public LoginResponse selectShop(SelectShopRequest request, HttpServletRequest httpRequest) {
+        String ipAddress = getClientIp(httpRequest);
+
+        User user = userRepository.findById(request.getUsrId())
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        // Verify user has an active assignment to this shop
+        userShopAssignmentRepository
+                .findByUserIdAndShopIdAndIsActiveTrue(user.getUsrId(), request.getShopId())
+                .orElseThrow(() -> new IllegalArgumentException(ErrorCode.INVALID_SHOP_ASSIGNMENT.getDefaultMessage()));
+
+        // Send OTP with selected shop context
         otpService.createAndSendOtp(
-                user.getUsrId(),
-                user.getUsrEmail(),
-                user.getUsrFirstName(),
-                user.getUserType().name(),
-                ipAddress
+                user.getUsrId(), user.getUsrEmail(), user.getUsrFirstName(),
+                user.getUserType().name(), ipAddress, request.getShopId()
         );
 
         return LoginResponse.builder()
@@ -103,10 +186,10 @@ public class AuthService {
 
         OtpVerification otp = otpService.verifyOtpByUserId(request.getUsrId(), request.getUsrSecret());
 
-        return buildTenantAuthResponse(otp.getUsrId(), ipAddress, userAgent);
+        return buildTenantAuthResponse(otp.getUsrId(), otp.getSelectedShopId(), ipAddress, userAgent);
     }
 
-    private AuthResponse buildTenantAuthResponse(UUID usrId, String ipAddress, String userAgent) {
+    private AuthResponse buildTenantAuthResponse(UUID usrId, UUID selectedShopId, String ipAddress, String userAgent) {
         User user = userRepository.findById(usrId)
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
 
@@ -115,8 +198,30 @@ public class AuthService {
         user.setLastLoginIp(ipAddress);
         userRepository.save(user);
 
-        // Generate tokens
-        UserPrincipal userPrincipal = new UserPrincipal(user);
+        // Determine roleId and shopId for token
+        UUID effectiveRoleId = user.getRoleId();
+        UUID effectiveShopId = null;
+        String context = "TENANT";
+
+        if (selectedShopId != null) {
+            UserShopAssignment assignment = userShopAssignmentRepository
+                    .findByUserIdAndShopIdAndIsActiveTrue(usrId, selectedShopId)
+                    .orElseThrow(() -> new BadCredentialsException("Shop assignment not found"));
+            effectiveShopId = selectedShopId;
+            effectiveRoleId = assignment.getRoleId() != null ? assignment.getRoleId() : user.getRoleId();
+            context = "SHOP";
+        }
+
+        // Build principal with correct permissions
+        List<String> permissionCodes = List.of();
+        if (effectiveRoleId != null) {
+            permissionCodes = rolePermissionRepository.findPermissionCodesByRoleId(effectiveRoleId);
+        }
+        UserPrincipal userPrincipal = new UserPrincipal(user, permissionCodes);
+        if (effectiveShopId != null) {
+            userPrincipal = userPrincipal.withShopId(effectiveShopId);
+        }
+
         String accessToken = jwtService.generateToken(userPrincipal);
         String refreshToken = jwtService.generateRefreshToken(userPrincipal);
 
@@ -125,10 +230,17 @@ public class AuthService {
         UUID tenantId = tenant != null ? tenant.getTenantId() : user.getTenantId();
         String tenantCode = tenant != null ? tenant.getTenantCode() : null;
 
+        // Resolve shop name if applicable
+        String shopName = null;
+        if (effectiveShopId != null) {
+            shopName = shopRepository.findById(effectiveShopId)
+                    .map(Shop::getShopName).orElse(null);
+        }
+
         // Create session
         UserSession session = userSessionService.createSession(
                 user.getUsrId(), accessToken, refreshToken,
-                tenantId, null, "TENANT",
+                tenantId, effectiveShopId, context,
                 ipAddress, userAgent);
 
         return AuthResponse.builder()
@@ -143,6 +255,8 @@ public class AuthService {
                 .tenantId(tenantId)
                 .tenantCode(tenantCode)
                 .sessionId(session.getId())
+                .shopId(effectiveShopId)
+                .shopName(shopName)
                 .mustChangePassword(user.getMustChangePassword())
                 .build();
     }
@@ -163,7 +277,29 @@ public class AuthService {
 
         User user = userRepository.findByUsrEmail(username)
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
-        UserPrincipal principal = new UserPrincipal(user);
+
+        // Determine effective role based on shop context
+        UUID effectiveRoleId = user.getRoleId();
+        if (session.getCurrentShopId() != null) {
+            UserShopAssignment assignment = userShopAssignmentRepository
+                    .findByUserIdAndShopIdAndIsActiveTrue(user.getUsrId(), session.getCurrentShopId())
+                    .orElse(null);
+            if (assignment != null && assignment.getRoleId() != null) {
+                effectiveRoleId = assignment.getRoleId();
+            }
+        }
+
+        List<String> permissionCodes = List.of();
+        if (effectiveRoleId != null) {
+            permissionCodes = rolePermissionRepository.findPermissionCodesByRoleId(effectiveRoleId);
+        }
+        UserPrincipal principal = new UserPrincipal(user, permissionCodes);
+
+        // Preserve shop context from the session
+        if (session.getCurrentShopId() != null) {
+            principal = principal.withShopId(session.getCurrentShopId());
+        }
+
         String newAccessToken = jwtService.generateToken(principal);
         String newRefreshToken = jwtService.generateRefreshToken(principal);
 
@@ -406,6 +542,73 @@ public class AuthService {
     @Transactional
     public void resendVerification(ForgotPasswordRequest request) {
         emailVerificationService.resendVerificationToken(request.getEmail());
+    }
+
+    // ==================== SHOP CONTEXT SWITCH ====================
+
+    @Transactional
+    public AuthResponse switchShop(SwitchShopRequest request, HttpServletRequest httpRequest) {
+        String ipAddress = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        // Only TENANT_ADMIN can switch shop context
+        if (principal.getUserType() != UserType.TENANT_ADMIN) {
+            throw new IllegalArgumentException("Only tenant administrators can switch shop context");
+        }
+
+        // Validate the shop belongs to this tenant
+        Shop shop = shopRepository.findByIdAndTenantId(request.getShopId(), principal.getTenantId())
+                .orElseThrow(() -> new IllegalArgumentException("Shop not found in your tenant"));
+
+        // Load the user fresh from DB
+        User user = userRepository.findById(principal.getId())
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        // Build principal with permissions and override shopId
+        List<String> permissionCodes = List.of();
+        if (user.getRoleId() != null) {
+            permissionCodes = rolePermissionRepository.findPermissionCodesByRoleId(user.getRoleId());
+        }
+        UserPrincipal shopPrincipal = new UserPrincipal(user, permissionCodes).withShopId(shop.getId());
+
+        // Generate new tokens with shop context
+        String accessToken = jwtService.generateToken(shopPrincipal);
+        String refreshToken = jwtService.generateRefreshToken(shopPrincipal);
+
+        // Invalidate old session from current token
+        String oldToken = httpRequest.getHeader("Authorization");
+        if (oldToken != null && oldToken.startsWith("Bearer ")) {
+            userSessionService.invalidateSession(oldToken.substring(7));
+        }
+
+        // Create new session with shop context
+        UserSession session = userSessionService.createSession(
+                user.getUsrId(), accessToken, refreshToken,
+                principal.getTenantId(), shop.getId(), "SHOP",
+                ipAddress, userAgent);
+
+        // Resolve tenant info
+        Tenant tenant = tenantRepository.findByUsrId(user.getUsrId()).orElse(null);
+        String tenantCode = tenant != null ? tenant.getTenantCode() : null;
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(jwtService.getJwtExpiration() / 1000)
+                .userType(shopPrincipal.getUserType().name())
+                .usrId(user.getUsrId())
+                .email(user.getUsrEmail())
+                .fullName(user.getFullName())
+                .tenantId(principal.getTenantId())
+                .tenantCode(tenantCode)
+                .sessionId(session.getId())
+                .shopId(shop.getId())
+                .shopName(shop.getShopName())
+                .build();
     }
 
     // ==================== HELPER METHODS ====================

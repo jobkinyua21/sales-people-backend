@@ -39,6 +39,7 @@ public class ShopService {
     private final AdditionalModuleRepository additionalModuleRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final UserRepository userRepository;
+    private final UserShopAssignmentRepository userShopAssignmentRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -82,26 +83,25 @@ public class ShopService {
             throw new IllegalArgumentException("Subscription plan is not active");
         }
 
-        // Validate manager fields on create
-        if (request.getManagerEmail() == null || request.getManagerEmail().isBlank()) {
-            throw new IllegalArgumentException("Manager email is required");
-        }
-        if (request.getManagerPhone() == null || request.getManagerPhone().isBlank()) {
-            throw new IllegalArgumentException("Manager phone is required");
-        }
-        if (request.getManagerFirstName() == null || request.getManagerFirstName().isBlank()) {
-            throw new IllegalArgumentException("Manager first name is required");
-        }
-        if (request.getManagerLastName() == null || request.getManagerLastName().isBlank()) {
-            throw new IllegalArgumentException("Manager last name is required");
-        }
+        boolean hasManager = request.getManagerEmail() != null && !request.getManagerEmail().isBlank();
 
-        // Check manager email/phone not already taken
-        if (userRepository.existsByUsrEmail(request.getManagerEmail())) {
-            throw new IllegalArgumentException("Manager email already registered");
-        }
-        if (userRepository.existsByUsrPhoneNumber(request.getManagerPhone())) {
-            throw new IllegalArgumentException("Manager phone number already registered");
+        // Validate manager fields only if manager details are provided
+        if (hasManager) {
+            if (request.getManagerPhone() == null || request.getManagerPhone().isBlank()) {
+                throw new IllegalArgumentException("Manager phone is required");
+            }
+            if (request.getManagerFirstName() == null || request.getManagerFirstName().isBlank()) {
+                throw new IllegalArgumentException("Manager first name is required");
+            }
+            if (request.getManagerLastName() == null || request.getManagerLastName().isBlank()) {
+                throw new IllegalArgumentException("Manager last name is required");
+            }
+            if (userRepository.existsByUsrEmail(request.getManagerEmail())) {
+                throw new IllegalArgumentException("Manager email already registered");
+            }
+            if (userRepository.existsByUsrPhoneNumber(request.getManagerPhone())) {
+                throw new IllegalArgumentException("Manager phone number already registered");
+            }
         }
 
         // Create shop
@@ -137,38 +137,47 @@ public class ShopService {
 
         ShopSubscription savedSubscription = shopSubscriptionRepository.save(subscription);
 
-        // Create shop manager user with random password
-        String randomPassword = generateRandomPassword();
-        String encodedPassword = passwordEncoder.encode(randomPassword);
-        String username = generateUsername(request.getManagerEmail());
+        // Create shop manager user only if manager details are provided
+        User savedManager = null;
+        if (hasManager) {
+            String randomPassword = generateRandomPassword();
+            String encodedPassword = passwordEncoder.encode(randomPassword);
+            String username = generateUsername(request.getManagerEmail());
 
-        User manager = User.builder()
-                .tenantId(tenantId)
-                .shopId(savedShop.getId())
-                .username(username)
-                .usrFirstName(request.getManagerFirstName())
-                .usrLastName(request.getManagerLastName())
-                .usrEmail(request.getManagerEmail())
-                .usrPhoneNumber(request.getManagerPhone())
-                .usrPassword(encodedPassword)
-                .userType(UserType.SHOP_MANAGER)
-                .usrStatus(UserStatus.ACTIVE)
-                .isActive(true)
-                .emailVerified(true)
-                .emailVerifiedAt(now)
-                .mustChangePassword(true)
-                .passwordVersion(1)
-                .passwordChangedAt(now)
-                .passwordExpiresAt(now.plusDays(passwordExpiryDays))
-                .build();
+            User manager = User.builder()
+                    .tenantId(tenantId)
+                    .username(username)
+                    .usrFirstName(request.getManagerFirstName())
+                    .usrLastName(request.getManagerLastName())
+                    .usrEmail(request.getManagerEmail())
+                    .usrPhoneNumber(request.getManagerPhone())
+                    .usrPassword(encodedPassword)
+                    .userType(UserType.SHOP_MANAGER)
+                    .usrStatus(UserStatus.ACTIVE)
+                    .isActive(true)
+                    .emailVerified(true)
+                    .emailVerifiedAt(now)
+                    .mustChangePassword(true)
+                    .passwordVersion(1)
+                    .passwordChangedAt(now)
+                    .passwordExpiresAt(now.plusDays(passwordExpiryDays))
+                    .build();
 
-        User savedManager = userRepository.save(manager);
+            savedManager = userRepository.save(manager);
+
+            // Create shop assignment for manager
+            UserShopAssignment managerAssignment = UserShopAssignment.builder()
+                    .userId(savedManager.getUsrId())
+                    .shopId(savedShop.getId())
+                    .shopRole(UserType.SHOP_MANAGER)
+                    .build();
+            userShopAssignmentRepository.save(managerAssignment);
+
+            sendManagerCredentialsEmail(savedManager, randomPassword, savedShop.getShopName());
+        }
 
         // Save additional modules
         saveAdditionalModules(savedShop.getId(), request.getAdditionalModuleIds());
-
-        // Send credentials email to manager
-        sendManagerCredentialsEmail(savedManager, randomPassword, savedShop.getShopName());
 
         return buildShopResponse(savedShop, savedSubscription, plan, savedManager);
     }
@@ -219,7 +228,11 @@ public class ShopService {
         SubscriptionPlan plan = subscription != null
                 ? subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId()).orElse(null)
                 : null;
-        User manager = userRepository.findByShopIdAndUserType(savedShop.getId(), UserType.SHOP_MANAGER).orElse(null);
+        User manager = userShopAssignmentRepository
+                .findByShopIdAndShopRoleAndIsActiveTrue(savedShop.getId(), UserType.SHOP_MANAGER)
+                .stream().findFirst()
+                .flatMap(a -> userRepository.findById(a.getUserId()))
+                .orElse(null);
 
         return buildShopResponse(savedShop, subscription, plan, manager);
     }
@@ -346,7 +359,11 @@ public class ShopService {
         SubscriptionPlan plan = subscription != null
                 ? subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId()).orElse(null)
                 : null;
-        User manager = userRepository.findByShopIdAndUserType(shop.getId(), UserType.SHOP_MANAGER).orElse(null);
+        User manager = userShopAssignmentRepository
+                .findByShopIdAndShopRoleAndIsActiveTrue(shop.getId(), UserType.SHOP_MANAGER)
+                .stream().findFirst()
+                .flatMap(a -> userRepository.findById(a.getUserId()))
+                .orElse(null);
         return buildShopResponse(shop, subscription, plan, manager);
     }
 

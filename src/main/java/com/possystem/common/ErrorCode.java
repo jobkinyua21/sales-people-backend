@@ -25,6 +25,9 @@ public enum ErrorCode {
     OTP_REQUIRED("AUTH_015", "OTP verification required"),
     OTP_RATE_LIMIT("AUTH_016", "Too many OTP requests. Please try again later"),
     OTP_MAX_ATTEMPTS("AUTH_017", "Too many wrong attempts. OTP has been invalidated"),
+    SHOP_SELECTION_REQUIRED("AUTH_018", "Please select a shop to continue"),
+    NO_SHOP_ASSIGNMENT("AUTH_019", "User has no active shop assignments"),
+    INVALID_SHOP_ASSIGNMENT("AUTH_020", "User is not assigned to this shop"),
 
     // 403 - Authorization Errors (Valid Token, Insufficient Permissions)
     ACCESS_DENIED("AUTHZ_001", "You do not have permission to access this resource"),

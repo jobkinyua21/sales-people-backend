@@ -51,4 +51,7 @@ public class OtpVerification {
     @Column(name = "attempt_count", nullable = false, columnDefinition = "integer default 0")
     @Builder.Default
     private Integer attemptCount = 0;
+
+    @Column(name = "selected_shop_id")
+    private UUID selectedShopId;
 }

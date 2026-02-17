@@ -30,9 +30,6 @@ public class User extends Auditable {
     @Column(name = "tenant_id")
     private UUID tenantId;
 
-    @Column(name = "shop_id")
-    private UUID shopId;
-
     @Column(name = "role_id")
     private UUID roleId;
 

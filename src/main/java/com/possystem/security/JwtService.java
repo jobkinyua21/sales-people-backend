@@ -42,6 +42,11 @@ public class JwtService {
         return id != null ? UUID.fromString(id) : null;
     }
 
+    public UUID extractShopId(String token) {
+        String id = extractClaim(token, claims -> claims.get("shopId", String.class));
+        return id != null ? UUID.fromString(id) : null;
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -59,6 +64,9 @@ public class JwtService {
             extraClaims.put("lastName", principal.getLastName());
             if (principal.getRoleId() != null) {
                 extraClaims.put("roleId", principal.getRoleId().toString());
+            }
+            if (principal.getShopId() != null) {
+                extraClaims.put("shopId", principal.getShopId().toString());
             }
         }
 

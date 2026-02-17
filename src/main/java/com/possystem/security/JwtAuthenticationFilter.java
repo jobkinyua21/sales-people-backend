@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -54,10 +55,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    // Apply shop context from JWT if present (for TENANT_ADMIN context switching)
+                    UserDetails principal = userDetails;
+                    UUID tokenShopId = jwtService.extractShopId(jwt);
+                    if (tokenShopId != null && userDetails instanceof UserPrincipal up) {
+                        principal = up.withShopId(tokenShopId);
+                    }
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
+                            principal,
                             null,
-                            userDetails.getAuthorities()
+                            principal.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
