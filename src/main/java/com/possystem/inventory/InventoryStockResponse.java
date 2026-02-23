@@ -21,6 +21,8 @@ public class InventoryStockResponse {
     private UUID shopId;
     private UUID variantId;
 
+
+
     // Product & variant info (resolved)
     private UUID productId;
     private String productName;
