@@ -1,6 +1,9 @@
 package com.possystem.common;
 
+import com.possystem.customer.CustomerGender;
+import com.possystem.customer.CustomerStatus;
 import com.possystem.inventory.ProductStatus;
+import com.possystem.supplier.SupplierStatus;
 import com.possystem.inventory.ProductType;
 import com.possystem.inventory.ProductVariantStatus;
 import com.possystem.module.enums.ModuleStatus;
@@ -41,6 +44,9 @@ public class EnumController {
         enums.put("productStatus", enumValues(ProductStatus.class));
         enums.put("productVariantStatus", enumValues(ProductVariantStatus.class));
         enums.put("stockStatus", List.of("IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"));
+        enums.put("customerStatus", enumValues(CustomerStatus.class));
+        enums.put("customerGender", enumValues(CustomerGender.class));
+        enums.put("supplierStatus", enumValues(SupplierStatus.class));
         return ResponseEntity.ok(enums);
     }
 

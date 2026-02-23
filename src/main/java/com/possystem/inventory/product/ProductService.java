@@ -4,6 +4,7 @@ import com.possystem.common.FetchRequest;
 import com.possystem.common.ListResponse;
 import com.possystem.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,7 +26,7 @@ public class ProductService {
     private final InventoryStockRepository inventoryStockRepository;
     private final CategoryRepository categoryRepository;
     private final ProductVariantService productVariantService;
-
+    private final ModelMapper modelMapper;
 
     // ==================== CRUD ====================
 
@@ -72,12 +73,10 @@ public class ProductService {
         Product product = productRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
-        // Soft delete product
         product.setIsActive(false);
         product.setStatus(ProductStatus.INACTIVE);
         productRepository.save(product);
 
-        // Cascade soft delete to variants + their stock
         softDeleteVariantsAndStock(product.getId(), shopId);
     }
 
@@ -116,12 +115,10 @@ public class ProductService {
     // ==================== CREATE / UPDATE ====================
 
     private ProductResponse createProduct(ProductRequest request, UUID shopId) {
-        // Validate unique name per shop
         if (productRepository.existsByShopIdAndProductNameIgnoreCaseAndIsActiveTrue(shopId, request.getProductName())) {
             throw new IllegalArgumentException("A product with this name already exists");
         }
 
-        // Validate category if provided
         if (request.getCategoryId() != null) {
             categoryRepository.findByIdAndShopIdAndIsActiveTrue(request.getCategoryId(), shopId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found"));
@@ -129,25 +126,18 @@ public class ProductService {
 
         ProductType productType = request.getProductType() != null ? request.getProductType() : ProductType.SIMPLE;
 
-        Product product = Product.builder()
-                .shopId(shopId)
-                .categoryId(request.getCategoryId())
-                .productCode(generateProductCode(shopId))
-                .productName(request.getProductName())
-                .description(request.getDescription())
-                .imageUrl(request.getImageUrl())
-                .productType(productType)
-                .status(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE)
-                .build();
+        Product product = modelMapper.map(request, Product.class);
+        product.setShopId(shopId);
+        product.setProductCode(generateProductCode(shopId));
+        product.setProductType(productType);
+        if (product.getStatus() == null) product.setStatus(ProductStatus.ACTIVE);
 
         Product saved = productRepository.save(product);
 
-        // For SIMPLE products, auto-create a default variant
         if (productType == ProductType.SIMPLE) {
             createDefaultVariant(saved, request.getDefaultVariant(), shopId);
         }
 
-        // For VARIABLE products, create all provided variants
         if (productType == ProductType.VARIABLE && request.getVariants() != null) {
             for (ProductVariantRequest variantReq : request.getVariants()) {
                 createVariantFromRequest(saved, variantReq, shopId);
@@ -161,34 +151,26 @@ public class ProductService {
         Product product = productRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
-        // Validate unique name (exclude self)
         if (request.getProductName() != null && !product.getProductName().equalsIgnoreCase(request.getProductName())) {
             if (productRepository.existsByShopIdAndProductNameIgnoreCaseAndIsActiveTrueAndIdNot(
                     shopId, request.getProductName(), product.getId())) {
                 throw new IllegalArgumentException("A product with this name already exists");
             }
-            product.setProductName(request.getProductName());
         }
 
-        // Validate category if changed
         if (request.getCategoryId() != null) {
             categoryRepository.findByIdAndShopIdAndIsActiveTrue(request.getCategoryId(), shopId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found"));
-            product.setCategoryId(request.getCategoryId());
         }
 
-        if (request.getDescription() != null) product.setDescription(request.getDescription());
-        if (request.getImageUrl() != null) product.setImageUrl(request.getImageUrl());
-        if (request.getStatus() != null) product.setStatus(request.getStatus());
+        modelMapper.map(request, product);
 
         Product saved = productRepository.save(product);
 
-        // For SIMPLE products, update the default variant if provided
         if (product.getProductType() == ProductType.SIMPLE && request.getDefaultVariant() != null) {
             updateDefaultVariant(saved, request.getDefaultVariant(), shopId);
         }
 
-        // For VARIABLE products, sync variants list
         if (product.getProductType() == ProductType.VARIABLE && request.getVariants() != null) {
             syncVariants(saved, request.getVariants(), shopId);
         }
@@ -234,7 +216,6 @@ public class ProductService {
 
         ProductVariant saved = productVariantRepository.save(variant);
 
-        // Auto-create stock if tracking
         if (trackStock) {
             InventoryStock stock = InventoryStock.builder()
                     .shopId(shopId)
@@ -253,13 +234,7 @@ public class ProductService {
         if (defaultVariant == null) return;
 
         defaultVariant.setVariantName(product.getProductName());
-        if (variantReq.getPrice() != null) defaultVariant.setPrice(variantReq.getPrice());
-        if (variantReq.getCostPrice() != null) defaultVariant.setCostPrice(variantReq.getCostPrice());
-        if (variantReq.getCompareAtPrice() != null) defaultVariant.setCompareAtPrice(variantReq.getCompareAtPrice());
-        if (variantReq.getBarcode() != null) defaultVariant.setBarcode(variantReq.getBarcode());
-        if (variantReq.getWeight() != null) defaultVariant.setWeight(variantReq.getWeight());
-        if (variantReq.getUom() != null) defaultVariant.setUom(variantReq.getUom());
-        if (variantReq.getTrackStock() != null) defaultVariant.setTrackStock(variantReq.getTrackStock());
+        modelMapper.map(variantReq, defaultVariant);
 
         productVariantRepository.save(defaultVariant);
     }
@@ -306,7 +281,6 @@ public class ProductService {
         List<ProductVariant> existingVariants = productVariantRepository
                 .findByProductIdAndShopIdAndIsActiveTrueOrderBySortOrderAsc(product.getId(), shopId);
 
-        // Collect IDs from the request (variants to keep/update)
         Set<UUID> requestVariantIds = new HashSet<>();
         for (ProductVariantRequest req : variantRequests) {
             if (req.getId() != null) {
@@ -314,7 +288,6 @@ public class ProductService {
             }
         }
 
-        // Soft delete variants not in the request
         for (ProductVariant existing : existingVariants) {
             if (!requestVariantIds.contains(existing.getId())) {
                 existing.setIsActive(false);
@@ -329,46 +302,35 @@ public class ProductService {
             }
         }
 
-        // Create new or update existing
         for (ProductVariantRequest req : variantRequests) {
             if (req.getId() != null) {
-                // Update existing variant
                 ProductVariant variant = productVariantRepository.findByIdAndShopIdAndIsActiveTrue(req.getId(), shopId)
                         .orElseThrow(() -> new IllegalArgumentException("Variant not found: " + req.getId()));
-
-                if (req.getVariantName() != null) variant.setVariantName(req.getVariantName());
-                if (req.getPrice() != null) variant.setPrice(req.getPrice());
-                if (req.getCostPrice() != null) variant.setCostPrice(req.getCostPrice());
-                if (req.getCompareAtPrice() != null) variant.setCompareAtPrice(req.getCompareAtPrice());
-                if (req.getBarcode() != null) variant.setBarcode(req.getBarcode());
-                if (req.getWeight() != null) variant.setWeight(req.getWeight());
-                if (req.getUom() != null) variant.setUom(req.getUom());
-                if (req.getTrackStock() != null) variant.setTrackStock(req.getTrackStock());
-                if (req.getSortOrder() != null) variant.setSortOrder(req.getSortOrder());
-                if (req.getStatus() != null) variant.setStatus(req.getStatus());
 
                 if (req.getSku() != null && !req.getSku().isBlank() && !req.getSku().equals(variant.getSku())) {
                     if (productVariantRepository.existsByShopIdAndSkuAndIsActiveTrueAndIdNot(shopId, req.getSku(), variant.getId())) {
                         throw new IllegalArgumentException("A variant with SKU '" + req.getSku() + "' already exists");
                     }
-                    variant.setSku(req.getSku());
                 }
+
+                modelMapper.map(req, variant);
 
                 productVariantRepository.save(variant);
             } else {
-                // Create new variant
                 createVariantFromRequest(product, req, shopId);
             }
         }
     }
 
     private ProductResponse buildProductResponse(Product product) {
+        ProductResponse response = modelMapper.map(product, ProductResponse.class);
+
         // Resolve category name
-        String categoryName = null;
         if (product.getCategoryId() != null) {
-            categoryName = categoryRepository.findByIdAndShopIdAndIsActiveTrue(product.getCategoryId(), product.getShopId())
+            String categoryName = categoryRepository.findByIdAndShopIdAndIsActiveTrue(product.getCategoryId(), product.getShopId())
                     .map(Category::getCategoryName)
                     .orElse(null);
+            response.setCategoryName(categoryName);
         }
 
         // Fetch variants with stock
@@ -377,23 +339,9 @@ public class ProductService {
         List<ProductVariantResponse> variantResponses = variants.stream()
                 .map(productVariantService::buildVariantResponse)
                 .toList();
+        response.setVariants(variantResponses);
 
-        return ProductResponse.builder()
-                .id(product.getId())
-                .shopId(product.getShopId())
-                .categoryId(product.getCategoryId())
-                .categoryName(categoryName)
-                .productCode(product.getProductCode())
-                .productName(product.getProductName())
-                .description(product.getDescription())
-                .imageUrl(product.getImageUrl())
-                .productType(product.getProductType())
-                .status(product.getStatus())
-                .isActive(product.getIsActive())
-                .createdAt(product.getCreatedAt())
-                .updatedAt(product.getUpdatedAt())
-                .variants(variantResponses)
-                .build();
+        return response;
     }
 
     private String generateProductCode(UUID shopId) {

@@ -4,6 +4,7 @@ import com.possystem.common.FetchRequest;
 import com.possystem.common.ListResponse;
 import com.possystem.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ModelMapper modelMapper;
 
     // ==================== CRUD ====================
 
@@ -37,7 +39,7 @@ public class CategoryService {
         if (request.getId() != null) {
             Category category = categoryRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found"));
-            List<CategoryResponse> result = List.of(buildCategoryResponse(category));
+            List<CategoryResponse> result = List.of(modelMapper.map(category, CategoryResponse.class));
             return ListResponse.of(result);
         }
 
@@ -47,14 +49,14 @@ public class CategoryService {
         if (limit == null) {
             List<Category> all = categoryRepository.searchAll(shopId, search);
             List<CategoryResponse> responses = all.stream()
-                    .map(this::buildCategoryResponse)
+                    .map(c -> modelMapper.map(c, CategoryResponse.class))
                     .toList();
             return ListResponse.of(responses);
         }
 
         PageRequest pageRequest = PageRequest.of(request.getStart(), limit);
         Page<Category> page = categoryRepository.searchAll(shopId, search, pageRequest);
-        Page<CategoryResponse> responsePage = page.map(this::buildCategoryResponse);
+        Page<CategoryResponse> responsePage = page.map(c -> modelMapper.map(c, CategoryResponse.class));
         return ListResponse.from(responsePage);
     }
 
@@ -77,62 +79,34 @@ public class CategoryService {
             throw new IllegalArgumentException("A category with this name already exists");
         }
 
-        Category category = Category.builder()
-                .shopId(shopId)
-                .categoryCode(generateCategoryCode(shopId))
-                .categoryName(request.getCategoryName())
-                .description(request.getDescription())
-                .imageUrl(request.getImageUrl())
-                .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
-                .status(request.getStatus() != null ? request.getStatus() : CategoryStatus.ACTIVE)
-                .isActive(true)
-                .build();
+        Category category = modelMapper.map(request, Category.class);
+        category.setShopId(shopId);
+        category.setCategoryCode(generateCategoryCode(shopId));
+        if (category.getSortOrder() == null) category.setSortOrder(0);
+        if (category.getStatus() == null) category.setStatus(CategoryStatus.ACTIVE);
+        category.setIsActive(true);
 
         Category saved = categoryRepository.save(category);
-        return buildCategoryResponse(saved);
+        return modelMapper.map(saved, CategoryResponse.class);
     }
 
     private CategoryResponse updateCategory(CategoryRequest request, UUID shopId) {
         Category category = categoryRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
-        if (!category.getCategoryName().equalsIgnoreCase(request.getCategoryName())) {
+        if (request.getCategoryName() != null && !category.getCategoryName().equalsIgnoreCase(request.getCategoryName())) {
             if (categoryRepository.existsByShopIdAndCategoryNameIgnoreCaseAndIsActiveTrueAndIdNot(shopId, request.getCategoryName(), category.getId())) {
                 throw new IllegalArgumentException("A category with this name already exists");
             }
         }
 
-        category.setCategoryName(request.getCategoryName());
-        category.setDescription(request.getDescription());
-        category.setImageUrl(request.getImageUrl());
-        if (request.getSortOrder() != null) {
-            category.setSortOrder(request.getSortOrder());
-        }
-        if (request.getStatus() != null) {
-            category.setStatus(request.getStatus());
-        }
+        modelMapper.map(request, category);
 
         Category saved = categoryRepository.save(category);
-        return buildCategoryResponse(saved);
+        return modelMapper.map(saved, CategoryResponse.class);
     }
 
     // ==================== HELPERS ====================
-
-    private CategoryResponse buildCategoryResponse(Category category) {
-        return CategoryResponse.builder()
-                .id(category.getId())
-                .shopId(category.getShopId())
-                .categoryCode(category.getCategoryCode())
-                .categoryName(category.getCategoryName())
-                .description(category.getDescription())
-                .imageUrl(category.getImageUrl())
-                .sortOrder(category.getSortOrder())
-                .status(category.getStatus())
-                .isActive(category.getIsActive())
-                .createdAt(category.getCreatedAt())
-                .updatedAt(category.getUpdatedAt())
-                .build();
-    }
 
     private String generateCategoryCode(UUID shopId) {
         long count = categoryRepository.countByShopId(shopId);

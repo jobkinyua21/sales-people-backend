@@ -125,19 +125,10 @@ public class ShopService {
         }
 
         // Create shop
-        Shop shop = Shop.builder()
-                .tenantId(tenantId)
-                .businessTypeId(request.getBusinessTypeId())
-                .shopCode(generateShopCode())
-                .shopName(request.getShopName())
-                .address(request.getAddress())
-                .city(request.getCity())
-                .country(request.getCountry())
-                .phone(request.getPhone())
-                .email(request.getEmail())
-                .logoUrl(request.getLogoUrl())
-                .status(ShopStatus.ACTIVE)
-                .build();
+        Shop shop = modelMapper.map(request, Shop.class);
+        shop.setTenantId(tenantId);
+        shop.setShopCode(generateShopCode());
+        shop.setStatus(ShopStatus.ACTIVE);
 
         Shop savedShop = shopRepository.save(shop);
 
@@ -435,62 +426,50 @@ public class ShopService {
     }
 
     private ShopResponse buildShopResponse(Shop shop, ShopSubscription subscription, SubscriptionPlan plan, User manager) {
+        ShopResponse response = modelMapper.map(shop, ShopResponse.class);
+
         // Resolve business type name
-        String businessTypeName = null;
         if (shop.getBusinessTypeId() != null) {
-            businessTypeName = businessTypeRepository.findByIdAndIsActiveTrue(shop.getBusinessTypeId())
+            String businessTypeName = businessTypeRepository.findByIdAndIsActiveTrue(shop.getBusinessTypeId())
                     .map(BusinessType::getName)
                     .orElse(null);
+            response.setBusinessTypeName(businessTypeName);
         }
 
-        ShopResponse.ShopResponseBuilder builder = ShopResponse.builder()
-                .id(shop.getId())
-                .businessTypeId(shop.getBusinessTypeId())
-                .businessTypeName(businessTypeName)
-                .shopCode(shop.getShopCode())
-                .shopName(shop.getShopName())
-                .address(shop.getAddress())
-                .city(shop.getCity())
-                .country(shop.getCountry())
-                .phone(shop.getPhone())
-                .email(shop.getEmail())
-                .logoUrl(shop.getLogoUrl())
-                .status(shop.getStatus())
-                .createdAt(shop.getCreatedAt())
-                .updatedAt(shop.getUpdatedAt());
-
+        // Subscription info
         if (subscription != null) {
-            builder.subscriptionPlanId(subscription.getSubscriptionPlanId())
-                    .billingCycle(subscription.getBillingCycle())
-                    .paymentMode(subscription.getPaymentMode())
-                    .subscriptionStatus(subscription.getStatus())
-                    .trialEndDate(subscription.getTrialEndDate())
-                    .currentPeriodEnd(subscription.getCurrentPeriodEnd())
-                    .graceUntil(subscription.getGraceUntil());
+            response.setSubscriptionPlanId(subscription.getSubscriptionPlanId());
+            response.setBillingCycle(subscription.getBillingCycle());
+            response.setPaymentMode(subscription.getPaymentMode());
+            response.setSubscriptionStatus(subscription.getStatus());
+            response.setTrialEndDate(subscription.getTrialEndDate());
+            response.setCurrentPeriodEnd(subscription.getCurrentPeriodEnd());
+            response.setGraceUntil(subscription.getGraceUntil());
         }
 
         if (plan != null) {
-            builder.subscriptionPlanName(plan.getPlanName());
+            response.setSubscriptionPlanName(plan.getPlanName());
         }
 
+        // Manager info
         if (manager != null) {
-            builder.managerId(manager.getUsrId())
-                    .managerName(manager.getFullName())
-                    .managerEmail(manager.getUsrEmail());
+            response.setManagerId(manager.getUsrId());
+            response.setManagerName(manager.getFullName());
+            response.setManagerEmail(manager.getUsrEmail());
         }
 
         // Default modules — from business type definition
         if (shop.getBusinessTypeId() != null) {
             List<BusinessTypeModule> defaultBtModules = businessTypeModuleRepository
                     .findByBusinessTypeIdAndIsDefaultTrue(shop.getBusinessTypeId());
-            builder.defaultModules(resolveModuleInfos(defaultBtModules));
+            response.setDefaultModules(resolveModuleInfos(defaultBtModules));
         }
 
         // Additional modules — what the shop actually subscribed to (paid extras)
-        builder.additionalModules(buildModuleInfos(
+        response.setAdditionalModules(buildModuleInfos(
                 shopAdditionalModuleRepository.findByShopIdAndIsActiveTrue(shop.getId())));
 
-        return builder.build();
+        return response;
     }
 
     private String generateShopCode() {

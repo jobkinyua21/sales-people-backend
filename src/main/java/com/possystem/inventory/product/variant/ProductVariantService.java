@@ -1,6 +1,7 @@
 package com.possystem.inventory;
 
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -12,34 +13,19 @@ public class ProductVariantService {
     private final ProductVariantRepository productVariantRepository;
     private final InventoryStockRepository inventoryStockRepository;
     private final InventoryStockService inventoryStockService;
+    private final ModelMapper modelMapper;
 
     ProductVariantResponse buildVariantResponse(ProductVariant variant) {
+        ProductVariantResponse response = modelMapper.map(variant, ProductVariantResponse.class);
+
+        // Resolve stock (computed field)
         InventoryStockResponse stockResponse = inventoryStockRepository
                 .findByVariantIdAndShopIdAndIsActiveTrue(variant.getId(), variant.getShopId())
                 .map(inventoryStockService::buildStockResponse)
                 .orElse(null);
+        response.setStock(stockResponse);
 
-        return ProductVariantResponse.builder()
-                .id(variant.getId())
-                .shopId(variant.getShopId())
-                .productId(variant.getProductId())
-                .sku(variant.getSku())
-                .variantName(variant.getVariantName())
-                .price(variant.getPrice())
-                .costPrice(variant.getCostPrice())
-                .compareAtPrice(variant.getCompareAtPrice())
-                .barcode(variant.getBarcode())
-                .weight(variant.getWeight())
-                .uom(variant.getUom())
-                .trackStock(variant.getTrackStock())
-                .isDefault(variant.getIsDefault())
-                .sortOrder(variant.getSortOrder())
-                .status(variant.getStatus())
-                .isActive(variant.getIsActive())
-                .createdAt(variant.getCreatedAt())
-                .updatedAt(variant.getUpdatedAt())
-                .stock(stockResponse)
-                .build();
+        return response;
     }
 
     String generateSku(UUID shopId) {

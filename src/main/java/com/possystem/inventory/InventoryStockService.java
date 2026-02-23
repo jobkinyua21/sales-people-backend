@@ -3,6 +3,7 @@ package com.possystem.inventory;
 import com.possystem.common.ListResponse;
 import com.possystem.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +23,7 @@ public class InventoryStockService {
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ModelMapper modelMapper;
 
     @Transactional
     public InventoryStockResponse save(InventoryStockRequest request) {
@@ -93,13 +95,9 @@ public class InventoryStockService {
             throw new IllegalArgumentException("Stock record already exists for this variant");
         }
 
-        InventoryStock stock = InventoryStock.builder()
-                .shopId(shopId)
-                .variantId(request.getVariantId())
-                .currentQuantity(request.getCurrentQuantity() != null ? request.getCurrentQuantity() : BigDecimal.ZERO)
-                .reorderLevel(request.getReorderLevel())
-                .reorderQuantity(request.getReorderQuantity())
-                .build();
+        InventoryStock stock = modelMapper.map(request, InventoryStock.class);
+        stock.setShopId(shopId);
+        if (stock.getCurrentQuantity() == null) stock.setCurrentQuantity(BigDecimal.ZERO);
 
         InventoryStock saved = inventoryStockRepository.save(stock);
         return buildStockResponse(saved);
@@ -111,15 +109,7 @@ public class InventoryStockService {
 
         BigDecimal oldQuantity = stock.getCurrentQuantity();
 
-        if (request.getCurrentQuantity() != null) {
-            stock.setCurrentQuantity(request.getCurrentQuantity());
-        }
-        if (request.getReorderLevel() != null) {
-            stock.setReorderLevel(request.getReorderLevel());
-        }
-        if (request.getReorderQuantity() != null) {
-            stock.setReorderQuantity(request.getReorderQuantity());
-        }
+        modelMapper.map(request, stock);
 
         // Track restock if quantity increased
         if (stock.getCurrentQuantity().compareTo(oldQuantity) > 0) {
@@ -131,68 +121,42 @@ public class InventoryStockService {
     }
 
     InventoryStockResponse buildStockResponse(InventoryStock stock) {
-        // Resolve variant → product → category
-        String productName = null;
-        String sku = null;
-        String categoryName = null;
-        BigDecimal costPrice = null;
-        BigDecimal price = null;
-        String variantName = null;
-        String productStatus = null;
-        UUID productId = null;
+        InventoryStockResponse response = modelMapper.map(stock, InventoryStockResponse.class);
 
+        // Resolve variant → product → category (computed fields)
         ProductVariant variant = productVariantRepository
                 .findByIdAndShopIdAndIsActiveTrue(stock.getVariantId(), stock.getShopId())
                 .orElse(null);
 
         if (variant != null) {
-            sku = variant.getSku();
-            costPrice = variant.getCostPrice();
-            price = variant.getPrice();
-            variantName = variant.getVariantName();
+            response.setSku(variant.getSku());
+            response.setCostPrice(variant.getCostPrice());
+            response.setPrice(variant.getPrice());
+            response.setVariantName(variant.getVariantName());
 
             Product product = productRepository
                     .findByIdAndShopIdAndIsActiveTrue(variant.getProductId(), stock.getShopId())
                     .orElse(null);
 
             if (product != null) {
-                productId = product.getId();
-                productName = product.getProductName();
-                productStatus = product.getStatus() != null ? product.getStatus().name() : null;
+                response.setProductId(product.getId());
+                response.setProductName(product.getProductName());
+                response.setProductStatus(product.getStatus() != null ? product.getStatus().name() : null);
 
                 if (product.getCategoryId() != null) {
-                    categoryName = categoryRepository
+                    String categoryName = categoryRepository
                             .findByIdAndShopIdAndIsActiveTrue(product.getCategoryId(), stock.getShopId())
                             .map(Category::getCategoryName)
                             .orElse(null);
+                    response.setCategoryName(categoryName);
                 }
             }
         }
 
         // Compute stock status
-        String stockStatus = computeStockStatus(stock);
+        response.setStockStatus(computeStockStatus(stock));
 
-        return InventoryStockResponse.builder()
-                .id(stock.getId())
-                .shopId(stock.getShopId())
-                .variantId(stock.getVariantId())
-                .productId(productId)
-                .productName(productName)
-                .sku(sku)
-                .categoryName(categoryName)
-                .costPrice(costPrice)
-                .price(price)
-                .variantName(variantName)
-                .productStatus(productStatus)
-                .currentQuantity(stock.getCurrentQuantity())
-                .reorderLevel(stock.getReorderLevel())
-                .reorderQuantity(stock.getReorderQuantity())
-                .stockStatus(stockStatus)
-                .lastRestockedAt(stock.getLastRestockedAt())
-                .isActive(stock.getIsActive())
-                .createdAt(stock.getCreatedAt())
-                .updatedAt(stock.getUpdatedAt())
-                .build();
+        return response;
     }
 
     private String computeStockStatus(InventoryStock stock) {
