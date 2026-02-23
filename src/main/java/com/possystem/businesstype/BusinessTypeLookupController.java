@@ -23,6 +23,7 @@ public class BusinessTypeLookupController {
         return ResponseEntity.ok(response);
     }
 
+
     @PostMapping("/additional-modules/{id}")
     public ResponseEntity<ApiResponse<List<BusinessTypeResponse.ModuleInfo>>> getAdditionalModules(
             @PathVariable UUID id) {
