@@ -24,6 +24,10 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     boolean existsByShopIdAndCategoryNameIgnoreCaseAndIsActiveTrueAndIdNot(UUID shopId, String categoryName, UUID id);
 
+    Optional<Category> findByShopIdAndCategoryNameIgnoreCaseAndIsActiveTrue(UUID shopId, String categoryName);
+
+    List<Category> findByShopIdAndIsActiveTrueOrderBySortOrderAsc(UUID shopId);
+
     @Query("SELECT c FROM Category c WHERE c.shopId = :shopId AND c.isActive = true AND " +
             "(:search IS NULL OR :search = '' OR " +
             "LOWER(c.categoryCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
