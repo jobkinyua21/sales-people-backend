@@ -25,6 +25,9 @@ public class Shop extends Auditable {
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
 
+    @Column(name = "business_type_id")
+    private UUID businessTypeId;
+
     @Column(name = "shop_code", nullable = false, unique = true, length = 50)
     private String shopCode;
 

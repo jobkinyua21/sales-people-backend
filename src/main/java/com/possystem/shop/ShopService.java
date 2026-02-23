@@ -2,6 +2,10 @@ package com.possystem.shop;
 
 import com.possystem.auth.user.User;
 import com.possystem.auth.user.UserRepository;
+import com.possystem.businesstype.BusinessType;
+import com.possystem.businesstype.BusinessTypeModule;
+import com.possystem.businesstype.BusinessTypeModuleRepository;
+import com.possystem.businesstype.BusinessTypeRepository;
 import com.possystem.common.*;
 import com.possystem.module.AdditionalModule;
 import com.possystem.module.AdditionalModuleRepository;
@@ -40,6 +44,8 @@ public class ShopService {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final UserRepository userRepository;
     private final UserShopAssignmentRepository userShopAssignmentRepository;
+    private final BusinessTypeRepository businessTypeRepository;
+    private final BusinessTypeModuleRepository businessTypeModuleRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -86,27 +92,42 @@ public class ShopService {
         boolean hasManager = request.getManagerEmail() != null && !request.getManagerEmail().isBlank();
 
         // Validate manager fields only if manager details are provided
+        boolean existingManager = false;
         if (hasManager) {
-            if (request.getManagerPhone() == null || request.getManagerPhone().isBlank()) {
-                throw new IllegalArgumentException("Manager phone is required");
+            User existingUser = userRepository.findByUsrEmail(request.getManagerEmail()).orElse(null);
+            if (existingUser != null) {
+                // Existing user — validate they belong to this tenant
+                if (!tenantId.equals(existingUser.getTenantId())) {
+                    throw new IllegalArgumentException("Manager email belongs to a different tenant");
+                }
+                existingManager = true;
+            } else {
+                // New user — validate required fields
+                if (request.getManagerPhone() == null || request.getManagerPhone().isBlank()) {
+                    throw new IllegalArgumentException("Manager phone is required");
+                }
+                if (request.getManagerFirstName() == null || request.getManagerFirstName().isBlank()) {
+                    throw new IllegalArgumentException("Manager first name is required");
+                }
+                if (request.getManagerLastName() == null || request.getManagerLastName().isBlank()) {
+                    throw new IllegalArgumentException("Manager last name is required");
+                }
+                if (userRepository.existsByUsrPhoneNumber(request.getManagerPhone())) {
+                    throw new IllegalArgumentException("Manager phone number already registered");
+                }
             }
-            if (request.getManagerFirstName() == null || request.getManagerFirstName().isBlank()) {
-                throw new IllegalArgumentException("Manager first name is required");
-            }
-            if (request.getManagerLastName() == null || request.getManagerLastName().isBlank()) {
-                throw new IllegalArgumentException("Manager last name is required");
-            }
-            if (userRepository.existsByUsrEmail(request.getManagerEmail())) {
-                throw new IllegalArgumentException("Manager email already registered");
-            }
-            if (userRepository.existsByUsrPhoneNumber(request.getManagerPhone())) {
-                throw new IllegalArgumentException("Manager phone number already registered");
-            }
+        }
+
+        // Validate business type if provided
+        if (request.getBusinessTypeId() != null) {
+            businessTypeRepository.findByIdAndIsActiveTrue(request.getBusinessTypeId())
+                    .orElseThrow(() -> new IllegalArgumentException("Business type not found"));
         }
 
         // Create shop
         Shop shop = Shop.builder()
                 .tenantId(tenantId)
+                .businessTypeId(request.getBusinessTypeId())
                 .shopCode(generateShopCode())
                 .shopName(request.getShopName())
                 .address(request.getAddress())
@@ -137,46 +158,73 @@ public class ShopService {
 
         ShopSubscription savedSubscription = shopSubscriptionRepository.save(subscription);
 
-        // Create shop manager user only if manager details are provided
+        // Assign manager to shop
         User savedManager = null;
         if (hasManager) {
-            String randomPassword = generateRandomPassword();
-            String encodedPassword = passwordEncoder.encode(randomPassword);
-            String username = generateUsername(request.getManagerEmail());
+            if (existingManager) {
+                // Existing user — just create assignment to new shop
+                savedManager = userRepository.findByUsrEmail(request.getManagerEmail()).get();
 
-            User manager = User.builder()
-                    .tenantId(tenantId)
-                    .username(username)
-                    .usrFirstName(request.getManagerFirstName())
-                    .usrLastName(request.getManagerLastName())
-                    .usrEmail(request.getManagerEmail())
-                    .usrPhoneNumber(request.getManagerPhone())
-                    .usrPassword(encodedPassword)
-                    .userType(UserType.SHOP_MANAGER)
-                    .usrStatus(UserStatus.ACTIVE)
-                    .isActive(true)
-                    .emailVerified(true)
-                    .emailVerifiedAt(now)
-                    .mustChangePassword(true)
-                    .passwordVersion(1)
-                    .passwordChangedAt(now)
-                    .passwordExpiresAt(now.plusDays(passwordExpiryDays))
-                    .build();
+                if (userShopAssignmentRepository.existsByUserIdAndShopIdAndIsActiveTrue(
+                        savedManager.getUsrId(), savedShop.getId())) {
+                    throw new IllegalArgumentException("Manager is already assigned to this shop");
+                }
 
-            savedManager = userRepository.save(manager);
+                UserShopAssignment managerAssignment = UserShopAssignment.builder()
+                        .userId(savedManager.getUsrId())
+                        .shopId(savedShop.getId())
+                        .shopRole(UserType.SHOP_MANAGER)
+                        .build();
+                userShopAssignmentRepository.save(managerAssignment);
+            } else {
+                // New user — create user + assignment
+                String randomPassword = generateRandomPassword();
+                String encodedPassword = passwordEncoder.encode(randomPassword);
+                String username = generateUsername(request.getManagerEmail());
 
-            // Create shop assignment for manager
-            UserShopAssignment managerAssignment = UserShopAssignment.builder()
-                    .userId(savedManager.getUsrId())
-                    .shopId(savedShop.getId())
-                    .shopRole(UserType.SHOP_MANAGER)
-                    .build();
-            userShopAssignmentRepository.save(managerAssignment);
+                User manager = User.builder()
+                        .tenantId(tenantId)
+                        .username(username)
+                        .usrFirstName(request.getManagerFirstName())
+                        .usrLastName(request.getManagerLastName())
+                        .usrEmail(request.getManagerEmail())
+                        .usrPhoneNumber(request.getManagerPhone())
+                        .usrPassword(encodedPassword)
+                        .userType(UserType.SHOP_MANAGER)
+                        .usrStatus(UserStatus.ACTIVE)
+                        .isActive(true)
+                        .emailVerified(true)
+                        .emailVerifiedAt(now)
+                        .mustChangePassword(true)
+                        .passwordVersion(1)
+                        .passwordChangedAt(now)
+                        .passwordExpiresAt(now.plusDays(passwordExpiryDays))
+                        .build();
 
-            sendManagerCredentialsEmail(savedManager, randomPassword, savedShop.getShopName());
+                savedManager = userRepository.save(manager);
+
+                UserShopAssignment managerAssignment = UserShopAssignment.builder()
+                        .userId(savedManager.getUsrId())
+                        .shopId(savedShop.getId())
+                        .shopRole(UserType.SHOP_MANAGER)
+                        .build();
+                userShopAssignmentRepository.save(managerAssignment);
+
+                sendManagerCredentialsEmail(savedManager, randomPassword, savedShop.getShopName());
+            }
         }
 
-        // Save additional modules
+        // Auto-assign default modules from business type (isDefault=true in business_type_module)
+        if (request.getBusinessTypeId() != null) {
+            List<BusinessTypeModule> defaultBtModules = businessTypeModuleRepository
+                    .findByBusinessTypeIdAndIsDefaultTrue(request.getBusinessTypeId());
+            List<UUID> defaultModuleIds = defaultBtModules.stream()
+                    .map(BusinessTypeModule::getAdditionalModuleId)
+                    .toList();
+            saveAdditionalModules(savedShop.getId(), defaultModuleIds);
+        }
+
+        // Save additional (paid) modules selected by tenant
         saveAdditionalModules(savedShop.getId(), request.getAdditionalModuleIds());
 
         return buildShopResponse(savedShop, savedSubscription, plan, savedManager);
@@ -279,8 +327,13 @@ public class ShopService {
         if (moduleIds == null || moduleIds.isEmpty()) return;
 
         for (UUID moduleId : moduleIds) {
+            // Skip if already assigned to this shop
+            if (shopAdditionalModuleRepository.existsByShopIdAndAdditionalModuleIdAndIsActiveTrue(shopId, moduleId)) {
+                continue;
+            }
+
             AdditionalModule module = additionalModuleRepository.findById(moduleId)
-                    .orElseThrow(() -> new IllegalArgumentException("Additional module not found: " + moduleId));
+                    .orElseThrow(() -> new IllegalArgumentException("Module not found: " + moduleId));
             if (module.getStatus() != ModuleStatus.ACTIVE) {
                 throw new IllegalArgumentException("Module is not active: " + module.getModuleName());
             }
@@ -311,7 +364,6 @@ public class ShopService {
 
         for (UUID moduleId : moduleIds) {
             if (!existingActiveIds.contains(moduleId)) {
-                // Check if it exists but was deactivated
                 var opt = shopAdditionalModuleRepository.findByShopIdAndAdditionalModuleId(shopId, moduleId);
                 if (opt.isPresent()) {
                     ShopAdditionalModule sam = opt.get();
@@ -320,7 +372,7 @@ public class ShopService {
                     shopAdditionalModuleRepository.save(sam);
                 } else {
                     AdditionalModule module = additionalModuleRepository.findById(moduleId)
-                            .orElseThrow(() -> new IllegalArgumentException("Additional module not found: " + moduleId));
+                            .orElseThrow(() -> new IllegalArgumentException("Module not found: " + moduleId));
                     if (module.getStatus() != ModuleStatus.ACTIVE) {
                         throw new IllegalArgumentException("Module is not active: " + module.getModuleName());
                     }
@@ -334,14 +386,29 @@ public class ShopService {
         }
     }
 
-    private List<ShopResponse.AdditionalModuleInfo> getAdditionalModuleInfos(UUID shopId) {
-        List<ShopAdditionalModule> activeModules = shopAdditionalModuleRepository.findByShopIdAndIsActiveTrue(shopId);
-        return activeModules.stream()
+    private List<ShopResponse.ModuleInfo> resolveModuleInfos(List<BusinessTypeModule> btModules) {
+        return btModules.stream()
+                .map(btm -> {
+                    AdditionalModule module = additionalModuleRepository.findById(btm.getAdditionalModuleId())
+                            .orElse(null);
+                    if (module == null) return null;
+                    return ShopResponse.ModuleInfo.builder()
+                            .id(module.getId())
+                            .moduleCode(module.getModuleCode())
+                            .moduleName(module.getModuleName())
+                            .build();
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private List<ShopResponse.ModuleInfo> buildModuleInfos(List<ShopAdditionalModule> shopModules) {
+        return shopModules.stream()
                 .map(sam -> {
                     AdditionalModule module = additionalModuleRepository.findById(sam.getAdditionalModuleId())
                             .orElse(null);
                     if (module == null) return null;
-                    return ShopResponse.AdditionalModuleInfo.builder()
+                    return ShopResponse.ModuleInfo.builder()
                             .id(module.getId())
                             .moduleCode(module.getModuleCode())
                             .moduleName(module.getModuleName())
@@ -368,8 +435,18 @@ public class ShopService {
     }
 
     private ShopResponse buildShopResponse(Shop shop, ShopSubscription subscription, SubscriptionPlan plan, User manager) {
+        // Resolve business type name
+        String businessTypeName = null;
+        if (shop.getBusinessTypeId() != null) {
+            businessTypeName = businessTypeRepository.findByIdAndIsActiveTrue(shop.getBusinessTypeId())
+                    .map(BusinessType::getName)
+                    .orElse(null);
+        }
+
         ShopResponse.ShopResponseBuilder builder = ShopResponse.builder()
                 .id(shop.getId())
+                .businessTypeId(shop.getBusinessTypeId())
+                .businessTypeName(businessTypeName)
                 .shopCode(shop.getShopCode())
                 .shopName(shop.getShopName())
                 .address(shop.getAddress())
@@ -402,7 +479,16 @@ public class ShopService {
                     .managerEmail(manager.getUsrEmail());
         }
 
-        builder.additionalModules(getAdditionalModuleInfos(shop.getId()));
+        // Default modules — from business type definition
+        if (shop.getBusinessTypeId() != null) {
+            List<BusinessTypeModule> defaultBtModules = businessTypeModuleRepository
+                    .findByBusinessTypeIdAndIsDefaultTrue(shop.getBusinessTypeId());
+            builder.defaultModules(resolveModuleInfos(defaultBtModules));
+        }
+
+        // Additional modules — what the shop actually subscribed to (paid extras)
+        builder.additionalModules(buildModuleInfos(
+                shopAdditionalModuleRepository.findByShopIdAndIsActiveTrue(shop.getId())));
 
         return builder.build();
     }

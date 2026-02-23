@@ -1,4 +1,4 @@
-package com.possystem.module;
+package com.possystem.inventory;
 
 import com.possystem.common.ApiResponse;
 import com.possystem.common.FetchRequest;
@@ -12,17 +12,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/admin/additional-modules")
+@RequestMapping("/api/v1/inventory/categories")
 @RequiredArgsConstructor
-public class AdditionalModuleController {
+public class CategoryController {
 
-    private final AdditionalModuleService additionalModuleService;
+    private final CategoryService categoryService;
 
     @PostMapping("/save")
-    public ResponseEntity<ApiResponse<AdditionalModuleResponse>> save(
-            @Valid @RequestBody AdditionalModuleRequest request) {
-        AdditionalModuleResponse response = additionalModuleService.save(request);
-        String message = request.getId() != null ? "Module updated" : "Module created";
+    public ResponseEntity<ApiResponse<CategoryResponse>> save(@Valid @RequestBody CategoryRequest request) {
+        CategoryResponse response = categoryService.save(request);
+        String message = request.getId() != null ? "Category updated" : "Category created";
         HttpStatus status = request.getId() != null ? HttpStatus.OK : HttpStatus.CREATED;
 
         if (status == HttpStatus.CREATED) {
@@ -32,14 +31,14 @@ public class AdditionalModuleController {
     }
 
     @PostMapping("/fetch")
-    public ResponseEntity<ListResponse<AdditionalModuleResponse>> fetch(@RequestBody FetchRequest request) {
-        ListResponse<AdditionalModuleResponse> response = additionalModuleService.fetch(request);
+    public ResponseEntity<ListResponse<CategoryResponse>> fetch(@RequestBody FetchRequest request) {
+        ListResponse<CategoryResponse> response = categoryService.fetch(request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
-        additionalModuleService.delete(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Module deleted"));
+        categoryService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Category deleted"));
     }
 }

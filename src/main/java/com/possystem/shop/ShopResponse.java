@@ -22,6 +22,8 @@ import java.util.UUID;
 public class ShopResponse {
 
     private UUID id;
+    private UUID businessTypeId;
+    private String businessTypeName;
     private String shopCode;
     private String shopName;
     private String address;
@@ -47,8 +49,11 @@ public class ShopResponse {
     private String managerName;
     private String managerEmail;
 
-    // Additional modules
-    private List<AdditionalModuleInfo> additionalModules;
+    // Default modules (from business type — included in base price)
+    private List<ModuleInfo> defaultModules;
+
+    // Additional modules (tenant-selected — extra cost)
+    private List<ModuleInfo> additionalModules;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -57,7 +62,7 @@ public class ShopResponse {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class AdditionalModuleInfo {
+    public static class ModuleInfo {
         private UUID id;
         private String moduleCode;
         private String moduleName;

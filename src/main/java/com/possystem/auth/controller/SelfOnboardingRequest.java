@@ -38,9 +38,6 @@ public class SelfOnboardingRequest {
     @Size(min = 2, max = 100, message = "Business name must be between 2 and 100 characters")
     private String businessName;
 
-    @NotBlank(message = "Business type is required")
-    private String businessType;
-
     @NotBlank(message = "Business address is required")
     private String businessAddress;
 

@@ -433,7 +433,6 @@ public class AuthService {
                 .tenantCode(tenantCode)
                 .usrId(savedUser.getUsrId())
                 .businessName(request.getBusinessName())
-                .businessType(request.getBusinessType())
                 .businessAddress(request.getBusinessAddress())
                 .businessEmail(request.getBusinessEmail())
                 .businessPhone(request.getBusinessPhone())

@@ -20,6 +20,8 @@ public class ShopRequest {
 
     private UUID id;
 
+    private UUID businessTypeId;
+
     @NotBlank(message = "Shop name is required")
     private String shopName;
 

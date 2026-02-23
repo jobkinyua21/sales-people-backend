@@ -1,4 +1,4 @@
-package com.possystem.module;
+package com.possystem.businesstype;
 
 import com.possystem.common.ApiResponse;
 import com.possystem.common.FetchRequest;
@@ -12,17 +12,17 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/admin/additional-modules")
+@RequestMapping("/api/v1/admin/business-types")
 @RequiredArgsConstructor
-public class AdditionalModuleController {
+public class BusinessTypeController {
 
-    private final AdditionalModuleService additionalModuleService;
+    private final BusinessTypeService businessTypeService;
 
     @PostMapping("/save")
-    public ResponseEntity<ApiResponse<AdditionalModuleResponse>> save(
-            @Valid @RequestBody AdditionalModuleRequest request) {
-        AdditionalModuleResponse response = additionalModuleService.save(request);
-        String message = request.getId() != null ? "Module updated" : "Module created";
+    public ResponseEntity<ApiResponse<BusinessTypeResponse>> save(
+            @Valid @RequestBody BusinessTypeRequest request) {
+        BusinessTypeResponse response = businessTypeService.save(request);
+        String message = request.getId() != null ? "Business type updated" : "Business type created";
         HttpStatus status = request.getId() != null ? HttpStatus.OK : HttpStatus.CREATED;
 
         if (status == HttpStatus.CREATED) {
@@ -32,14 +32,14 @@ public class AdditionalModuleController {
     }
 
     @PostMapping("/fetch")
-    public ResponseEntity<ListResponse<AdditionalModuleResponse>> fetch(@RequestBody FetchRequest request) {
-        ListResponse<AdditionalModuleResponse> response = additionalModuleService.fetch(request);
+    public ResponseEntity<ListResponse<BusinessTypeResponse>> fetch(@RequestBody FetchRequest request) {
+        ListResponse<BusinessTypeResponse> response = businessTypeService.fetch(request);
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
+@DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
-        additionalModuleService.delete(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Module deleted"));
+        businessTypeService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Business type deleted"));
     }
 }
