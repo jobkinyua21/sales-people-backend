@@ -3,6 +3,11 @@ package com.possystem.common;
 import com.possystem.customer.CustomerGender;
 import com.possystem.customer.CustomerStatus;
 import com.possystem.inventory.ProductStatus;
+import com.possystem.supplier.PaymentTerms;
+import com.possystem.sales.DiscountType;
+import com.possystem.sales.OrderStatus;
+import com.possystem.sales.PaymentMethod;
+import com.possystem.sales.PaymentStatus;
 import com.possystem.supplier.SupplierStatus;
 import com.possystem.inventory.ProductType;
 import com.possystem.inventory.ProductVariantStatus;
@@ -47,6 +52,11 @@ public class EnumController {
         enums.put("customerStatus", enumValues(CustomerStatus.class));
         enums.put("customerGender", enumValues(CustomerGender.class));
         enums.put("supplierStatus", enumValues(SupplierStatus.class));
+        enums.put("paymentTerms", enumValues(PaymentTerms.class));
+        enums.put("orderStatus", enumValues(OrderStatus.class));
+        enums.put("paymentMethod", enumValues(PaymentMethod.class));
+        enums.put("paymentStatus", enumValues(PaymentStatus.class));
+        enums.put("discountType", enumValues(DiscountType.class));
         return ResponseEntity.ok(enums);
     }
 

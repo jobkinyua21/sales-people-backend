@@ -29,7 +29,7 @@ public class SupplierRequest {
 
     private String country;
 
-    private String paymentTerms;
+    private PaymentTerms paymentTerms;
 
     private String bankName;
 

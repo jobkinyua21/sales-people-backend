@@ -54,8 +54,9 @@ public class Supplier extends Auditable {
     @Column(name = "country", length = 100)
     private String country;
 
-    @Column(name = "payment_terms", length = 100)
-    private String paymentTerms;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_terms", length = 30)
+    private PaymentTerms paymentTerms;
 
     @Column(name = "bank_name", length = 150)
     private String bankName;

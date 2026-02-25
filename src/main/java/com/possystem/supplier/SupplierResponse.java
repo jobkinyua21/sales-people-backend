@@ -28,7 +28,7 @@ public class SupplierResponse {
     private String physicalAddress;
     private String city;
     private String country;
-    private String paymentTerms;
+    private PaymentTerms paymentTerms;
     private String bankName;
     private String bankAccountNumber;
     private String website;
