@@ -16,7 +16,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "user", schema = "pos_core")
+@Table(name = "user", schema = "pos_core", indexes = {
+        @Index(name = "idx_user_tenant", columnList = "tenant_id"),
+        @Index(name = "idx_user_role", columnList = "role_id"),
+        @Index(name = "idx_user_status", columnList = "status"),
+        @Index(name = "idx_user_email", columnList = "email"),
+        @Index(name = "idx_user_phone", columnList = "phone_number"),
+        @Index(name = "idx_user_active", columnList = "is_active")
+})
 @ToString(onlyExplicitlyIncluded = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class User extends Auditable {

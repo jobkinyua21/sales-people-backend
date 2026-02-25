@@ -170,6 +170,31 @@ public class SalesOrderService {
         return buildOrderResponse(saved, shopId);
     }
 
+    /**
+     * Internal payment addition — called from M-Pesa callback (no security context).
+     */
+    @Transactional
+    public void addPaymentInternal(AddPaymentRequest request) {
+        SalesOrder order = salesOrderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+        if (order.getOrderStatus() != OrderStatus.PENDING) {
+            return; // silently skip if order is no longer pending
+        }
+
+        SalesPayment payment = SalesPayment.builder()
+                .salesOrder(order)
+                .paymentMethod(request.getPaymentMethod())
+                .amount(request.getAmount())
+                .referenceNumber(request.getReferenceNumber())
+                .notes(request.getNotes())
+                .build();
+
+        order.getPayments().add(payment);
+        recalculatePaymentStatus(order);
+        salesOrderRepository.save(order);
+    }
+
     @Transactional
     public void delete(UUID id) {
         UUID shopId = getCurrentShopId();

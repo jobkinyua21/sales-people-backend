@@ -11,7 +11,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "sales_order", schema = "pos_core")
+@Table(name = "sales_order", schema = "pos_core", indexes = {
+        @Index(name = "idx_sales_order_shop_active", columnList = "shop_id, is_active"),
+        @Index(name = "idx_sales_order_customer", columnList = "customer_id"),
+        @Index(name = "idx_sales_order_status", columnList = "order_status"),
+        @Index(name = "idx_sales_order_payment_status", columnList = "payment_status"),
+        @Index(name = "idx_sales_order_created_at", columnList = "created_at DESC"),
+        @Index(name = "idx_sales_order_number", columnList = "shop_id, order_number")
+})
 @Getter
 @Setter
 @Builder

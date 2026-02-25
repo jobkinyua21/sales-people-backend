@@ -8,7 +8,10 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "sales_order_item", schema = "pos_core")
+@Table(name = "sales_order_item", schema = "pos_core", indexes = {
+        @Index(name = "idx_sales_order_item_order", columnList = "sales_order_id"),
+        @Index(name = "idx_sales_order_item_variant", columnList = "variant_id")
+})
 @Getter
 @Setter
 @Builder

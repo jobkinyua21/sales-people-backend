@@ -15,7 +15,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 @Entity
-@Table(name = "tenant", schema = "pos_core")
+@Table(name = "tenant", schema = "pos_core", indexes = {
+        @Index(name = "idx_tenant_user", columnList = "user_id"),
+        @Index(name = "idx_tenant_status", columnList = "status"),
+        @Index(name = "idx_tenant_active", columnList = "is_active")
+})
 public class Tenant extends Auditable {
 
     @Id

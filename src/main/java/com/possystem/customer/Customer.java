@@ -9,7 +9,14 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "customer", schema = "pos_core")
+@Table(name = "customer", schema = "pos_core", indexes = {
+        @Index(name = "idx_customer_shop_active", columnList = "shop_id, is_active"),
+        @Index(name = "idx_customer_code", columnList = "shop_id, customer_code"),
+        @Index(name = "idx_customer_name", columnList = "shop_id, customer_name"),
+        @Index(name = "idx_customer_email", columnList = "shop_id, email"),
+        @Index(name = "idx_customer_status", columnList = "status"),
+        @Index(name = "idx_customer_created_at", columnList = "created_at DESC")
+})
 @Getter
 @Setter
 @Builder

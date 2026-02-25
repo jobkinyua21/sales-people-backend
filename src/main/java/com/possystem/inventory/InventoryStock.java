@@ -9,7 +9,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "inventory_stock", schema = "pos_core")
+@Table(name = "inventory_stock", schema = "pos_core", indexes = {
+        @Index(name = "idx_stock_shop_active", columnList = "shop_id, is_active"),
+        @Index(name = "idx_stock_variant", columnList = "variant_id, shop_id", unique = true)
+})
 @Getter
 @Setter
 @Builder

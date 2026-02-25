@@ -7,7 +7,13 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "supplier", schema = "pos_core")
+@Table(name = "supplier", schema = "pos_core", indexes = {
+        @Index(name = "idx_supplier_shop_active", columnList = "shop_id, is_active"),
+        @Index(name = "idx_supplier_code", columnList = "shop_id, supplier_code"),
+        @Index(name = "idx_supplier_name", columnList = "shop_id, supplier_name"),
+        @Index(name = "idx_supplier_status", columnList = "status"),
+        @Index(name = "idx_supplier_created_at", columnList = "created_at DESC")
+})
 @Getter
 @Setter
 @Builder
