@@ -33,6 +33,7 @@ public class SalesOrderResponse {
     private BigDecimal totalAmount;
     private BigDecimal amountPaid;
     private BigDecimal changeAmount;
+    private BigDecimal balanceDue;
     private String referenceNumber;
     private String notes;
     private UUID servedBy;

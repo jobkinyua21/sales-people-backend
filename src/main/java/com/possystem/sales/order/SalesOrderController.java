@@ -23,7 +23,7 @@ public class SalesOrderController {
     private final SalesReceiptService salesReceiptService;
 
     @PostMapping("/save")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_CREATE') or hasAuthority('INVOICES_EDIT')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_CREATE') or hasAuthority('SALES_ORDERS_EDIT')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> save(
             @Valid @RequestBody SalesOrderRequest request) {
         SalesOrderResponse response = salesOrderService.save(request);
@@ -37,7 +37,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/fetch")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_VIEW')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_VIEW')")
     public ResponseEntity<ListResponse<SalesOrderResponse>> fetch(
             @RequestBody SalesOrderFetchRequest request) {
         ListResponse<SalesOrderResponse> response = salesOrderService.fetch(request);
@@ -45,7 +45,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/complete")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_MANAGE')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_MANAGE')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> complete(
             @Valid @RequestBody SalesOrderActionRequest request) {
         SalesOrderResponse response = salesOrderService.completeOrder(request.getId());
@@ -53,7 +53,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/cancel")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_MANAGE')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_MANAGE')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> cancel(
             @Valid @RequestBody SalesOrderActionRequest request) {
         SalesOrderResponse response = salesOrderService.cancelOrder(request.getId());
@@ -61,7 +61,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/payment")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PAYMENTS_CREATE')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_CREATE') or hasAuthority('SALES_ORDERS_MANAGE')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> addPayment(
             @Valid @RequestBody AddPaymentRequest request) {
         SalesOrderResponse response = salesOrderService.addPayment(request);
@@ -69,7 +69,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/receipt")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_VIEW')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_VIEW')")
     public ResponseEntity<byte[]> downloadReceipt(@RequestBody SalesOrderActionRequest request) {
         byte[] pdf = salesReceiptService.generateReceipt(request.getId());
 
@@ -81,14 +81,14 @@ public class SalesOrderController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_DELETE')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_DELETE')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         salesOrderService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Order deleted"));
     }
 
     @DeleteMapping("/bulk")
-    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_DELETE')")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SALES_ORDERS_DELETE')")
     public ResponseEntity<ApiResponse<Void>> bulkDelete(@RequestBody List<UUID> ids) {
         int count = salesOrderService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null, count + " orders deleted"));

@@ -9,6 +9,7 @@ import com.possystem.inventory.Product;
 import com.possystem.inventory.ProductRepository;
 import com.possystem.inventory.ProductVariant;
 import com.possystem.inventory.ProductVariantRepository;
+import com.possystem.sales.register.CashRegisterService;
 import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -33,6 +34,7 @@ public class SalesOrderService {
     private final ProductRepository productRepository;
     private final InventoryStockRepository inventoryStockRepository;
     private final CustomerRepository customerRepository;
+    private final CashRegisterService cashRegisterService;
     private final ModelMapper modelMapper;
 
     // ==================== CRUD ====================
@@ -137,6 +139,9 @@ public class SalesOrderService {
             restoreCreditPayments(order, shopId);
         }
 
+        // Track cash refunds in register
+        trackCashRefunds(order, shopId);
+
         order.setOrderStatus(OrderStatus.CANCELLED);
         order.setCancelledAt(LocalDateTime.now());
 
@@ -166,6 +171,12 @@ public class SalesOrderService {
         recalculatePaymentStatus(order);
 
         SalesOrder saved = salesOrderRepository.save(order);
+
+        // Track cash payment in the cashier's register session
+        if (request.getPaymentMethod() == PaymentMethod.CASH) {
+            cashRegisterService.recordCashSale(shopId, SecurityContextUtil.getCurrentUserId(), request.getAmount());
+        }
+
         return buildOrderResponse(saved, shopId);
     }
 
@@ -229,6 +240,12 @@ public class SalesOrderService {
     // ==================== CREATE / UPDATE ====================
 
     private SalesOrderResponse createOrder(SalesOrderRequest request, UUID shopId) {
+        // Enforce open register session for the current cashier
+        UUID currentUserId = SecurityContextUtil.getCurrentUserId();
+        if (!cashRegisterService.hasOpenSession(shopId, currentUserId)) {
+            throw new IllegalArgumentException("You don't have an open register session. Open the cash register before creating orders.");
+        }
+
         SalesOrder order = new SalesOrder();
         order.setShopId(shopId);
         order.setOrderNumber(generateOrderNumber(shopId));
@@ -273,6 +290,10 @@ public class SalesOrderService {
         }
 
         SalesOrder saved = salesOrderRepository.save(order);
+
+        // Track cash payments in register session
+        trackCashPayments(saved, shopId);
+
         return buildOrderResponse(saved, shopId);
     }
 
@@ -604,7 +625,36 @@ public class SalesOrderService {
                 .toList();
         response.setPayments(paymentResponses);
 
+        // Balance due
+        BigDecimal balanceDue = order.getTotalAmount().subtract(
+                order.getAmountPaid() != null ? order.getAmountPaid() : BigDecimal.ZERO);
+        response.setBalanceDue(balanceDue.max(BigDecimal.ZERO));
+
         return response;
+    }
+
+    // ==================== CASH REGISTER ====================
+
+    private void trackCashPayments(SalesOrder order, UUID shopId) {
+        BigDecimal cashTotal = order.getPayments().stream()
+                .filter(p -> p.getPaymentMethod() == PaymentMethod.CASH)
+                .map(SalesPayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (cashTotal.compareTo(BigDecimal.ZERO) > 0) {
+            cashRegisterService.recordCashSale(shopId, order.getServedBy(), cashTotal);
+        }
+    }
+
+    private void trackCashRefunds(SalesOrder order, UUID shopId) {
+        BigDecimal cashTotal = order.getPayments().stream()
+                .filter(p -> p.getPaymentMethod() == PaymentMethod.CASH)
+                .map(SalesPayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (cashTotal.compareTo(BigDecimal.ZERO) > 0) {
+            cashRegisterService.recordCashRefund(shopId, order.getServedBy(), cashTotal);
+        }
     }
 
     // ==================== HELPERS ====================

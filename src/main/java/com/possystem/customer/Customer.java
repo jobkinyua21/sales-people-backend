@@ -49,18 +49,18 @@ public class Customer extends Auditable {
     @Column(name = "gender", length = 10)
     private CustomerGender gender;
 
-    @Column(name = "credit_enabled", nullable = false)
+    @Column(name = "credit_enabled", columnDefinition = "boolean default false")
     @Builder.Default
     private Boolean creditEnabled = false;
 
-    @Column(name = "credit_limit", precision = 12, scale = 2)
+    @Column(name = "credit_limit", precision = 12, scale = 2, columnDefinition = "numeric(12,2) default 0")
     @Builder.Default
     private BigDecimal creditLimit = BigDecimal.ZERO;
 
     @Column(name = "credit_terms_days")
     private Integer creditTermsDays;
 
-    @Column(name = "outstanding_balance", precision = 12, scale = 2)
+    @Column(name = "outstanding_balance", precision = 12, scale = 2, columnDefinition = "numeric(12,2) default 0")
     @Builder.Default
     private BigDecimal outstandingBalance = BigDecimal.ZERO;
 

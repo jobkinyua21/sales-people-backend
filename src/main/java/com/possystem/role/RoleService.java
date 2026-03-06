@@ -361,6 +361,28 @@ public class RoleService {
         if (count != permissionIds.size()) {
             throw new IllegalArgumentException("One or more permissions not found");
         }
+
+        // Prevent privilege escalation: non-admin users can only assign permissions they have
+        UserPrincipal principal = SecurityContextUtil.getCurrentPrincipal();
+        if (!principal.getUserType().isTenantLevel()) {
+            List<String> callerPermCodes = principal.getAuthorities().stream()
+                    .map(a -> a.getAuthority())
+                    .filter(a -> !a.startsWith("ROLE_"))
+                    .toList();
+
+            List<String> requestedCodes = permissionRepository.findAllById(permissionIds).stream()
+                    .map(Permission::getPermissionCode)
+                    .toList();
+
+            List<String> unauthorized = requestedCodes.stream()
+                    .filter(code -> !callerPermCodes.contains(code))
+                    .toList();
+
+            if (!unauthorized.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "You cannot assign permissions you don't have: " + String.join(", ", unauthorized));
+            }
+        }
     }
 
     private RoleResponse buildRoleResponse(Role role) {

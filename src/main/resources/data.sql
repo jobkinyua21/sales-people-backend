@@ -450,3 +450,37 @@ ON CONFLICT (permission_code) DO NOTHING;
 INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
 VALUES (gen_random_uuid(), 'CATEGORIES_DELETE', 'Delete Categories', 'CATEGORIES', 'DELETE', 'Remove product categories')
 ON CONFLICT (permission_code) DO NOTHING;
+
+-- SALES_ORDERS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_ORDERS_VIEW', 'View Sales Orders', 'SALES_ORDERS', 'VIEW', 'View sales order list and details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_ORDERS_CREATE', 'Create Sales Orders', 'SALES_ORDERS', 'CREATE', 'Create new sales orders')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_ORDERS_EDIT', 'Edit Sales Orders', 'SALES_ORDERS', 'EDIT', 'Modify sales order details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_ORDERS_DELETE', 'Delete Sales Orders', 'SALES_ORDERS', 'DELETE', 'Remove sales orders')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_ORDERS_EXPORT', 'Export Sales Orders', 'SALES_ORDERS', 'EXPORT', 'Export sales order data')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_ORDERS_MANAGE', 'Manage Sales Orders', 'SALES_ORDERS', 'MANAGE', 'Complete, cancel and manage sales order lifecycle')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- CASH_REGISTER permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'CASH_REGISTER_VIEW', 'View Cash Register', 'CASH_REGISTER', 'VIEW', 'View cash register sessions and history')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'CASH_REGISTER_MANAGE', 'Manage Cash Register', 'CASH_REGISTER', 'MANAGE', 'Open, close register and record cash movements')
+ON CONFLICT (permission_code) DO NOTHING;
