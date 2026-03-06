@@ -10,9 +10,10 @@ import com.possystem.common.*;
 import com.possystem.module.AdditionalModule;
 import com.possystem.module.AdditionalModuleRepository;
 import com.possystem.module.enums.ModuleStatus;
+import com.possystem.role.RoleService;
 import com.possystem.shop.enums.ShopStatus;
 import com.possystem.shop.enums.SubscriptionStatus;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import com.possystem.subscription.SubscriptionPlan;
 import com.possystem.subscription.SubscriptionPlanRepository;
 import com.possystem.subscription.SubscriptionPlanStatus;
@@ -22,7 +23,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +46,7 @@ public class ShopService {
     private final UserShopAssignmentRepository userShopAssignmentRepository;
     private final BusinessTypeRepository businessTypeRepository;
     private final BusinessTypeModuleRepository businessTypeModuleRepository;
+    private final RoleService roleService;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -61,7 +62,7 @@ public class ShopService {
 
     @Transactional
     public ShopResponse save(ShopRequest request) {
-        UUID tenantId = getCurrentTenantId();
+        UUID tenantId = SecurityContextUtil.getCurrentTenantId();
 
         if (request.getId() != null) {
             return updateShop(request, tenantId);
@@ -70,7 +71,10 @@ public class ShopService {
     }
 
     private ShopResponse createShop(ShopRequest request, UUID tenantId) {
-        // Validate subscription fields on create
+        // Validate required fields on create
+        if (request.getShopName() == null || request.getShopName().isBlank()) {
+            throw new IllegalArgumentException("Shop name is required");
+        }
         if (request.getSubscriptionPlanId() == null) {
             throw new IllegalArgumentException("Subscription plan is required");
         }
@@ -149,6 +153,9 @@ public class ShopService {
 
         ShopSubscription savedSubscription = shopSubscriptionRepository.save(subscription);
 
+        // Create default shop roles (Shop Manager + Shop User)
+        UUID shopManagerRoleId = roleService.createDefaultShopRoles(tenantId, savedShop.getId());
+
         // Assign manager to shop
         User savedManager = null;
         if (hasManager) {
@@ -164,6 +171,7 @@ public class ShopService {
                 UserShopAssignment managerAssignment = UserShopAssignment.builder()
                         .userId(savedManager.getUsrId())
                         .shopId(savedShop.getId())
+                        .roleId(shopManagerRoleId)
                         .shopRole(UserType.SHOP_MANAGER)
                         .build();
                 userShopAssignmentRepository.save(managerAssignment);
@@ -197,6 +205,7 @@ public class ShopService {
                 UserShopAssignment managerAssignment = UserShopAssignment.builder()
                         .userId(savedManager.getUsrId())
                         .shopId(savedShop.getId())
+                        .roleId(shopManagerRoleId)
                         .shopRole(UserType.SHOP_MANAGER)
                         .build();
                 userShopAssignmentRepository.save(managerAssignment);
@@ -225,7 +234,7 @@ public class ShopService {
         Shop shop = shopRepository.findByIdAndTenantId(request.getId(), tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Shop not found"));
 
-        // Update shop fields
+        // Update shop fields (ModelMapper skips nulls via setSkipNullEnabled)
         modelMapper.map(request, shop);
         shop.setTenantId(tenantId);
 
@@ -277,7 +286,7 @@ public class ShopService {
     }
 
     public ListResponse<ShopResponse> fetch(FetchRequest request) {
-        UUID tenantId = getCurrentTenantId();
+        UUID tenantId = SecurityContextUtil.getCurrentTenantId();
 
         if (request.getId() != null) {
             Shop shop = shopRepository.findByIdAndTenantId(request.getId(), tenantId)
@@ -306,7 +315,7 @@ public class ShopService {
 
     @Transactional
     public void delete(UUID id) {
-        UUID tenantId = getCurrentTenantId();
+        UUID tenantId = SecurityContextUtil.getCurrentTenantId();
         Shop shop = shopRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Shop not found"));
         shopRepository.delete(shop);
@@ -532,9 +541,4 @@ public class ShopService {
         }
     }
 
-    private UUID getCurrentTenantId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        return principal.getTenantId();
-    }
 }

@@ -26,4 +26,6 @@ public interface UserShopAssignmentRepository extends JpaRepository<UserShopAssi
     long countByUserIdAndIsActiveTrue(UUID userId);
 
     long countByShopIdAndIsActiveTrue(UUID shopId);
+
+    long countByRoleId(UUID roleId);
 }

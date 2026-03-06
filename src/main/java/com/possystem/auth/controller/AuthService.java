@@ -90,7 +90,7 @@ public class AuthService {
                 user.getUsrEmail(), true, ipAddress, userAgent, null);
 
         // Branch by user type for shop selection
-        if (user.getUserType() == UserType.SYSTEM_OWNER || user.getUserType() == UserType.TENANT_ADMIN) {
+        if (user.getUserType().isTenantLevel()) {
             // No shop selection needed — send OTP immediately
             otpService.createAndSendOtp(
                     user.getUsrId(), user.getUsrEmail(), user.getUsrFirstName(),

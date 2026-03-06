@@ -2,12 +2,11 @@ package com.possystem.inventory;
 
 import com.possystem.common.FetchRequest;
 import com.possystem.common.ListResponse;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +24,7 @@ public class CategoryService {
 
     @Transactional
     public CategoryResponse save(CategoryRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateCategory(request, shopId);
@@ -34,7 +33,7 @@ public class CategoryService {
     }
 
     public ListResponse<CategoryResponse> fetch(FetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             Category category = categoryRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
@@ -62,7 +61,7 @@ public class CategoryService {
 
     @Transactional
     public void delete(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         Category category = categoryRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
@@ -118,13 +117,4 @@ public class CategoryService {
         return code;
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

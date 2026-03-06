@@ -22,6 +22,7 @@ public class GrnFetchRequest {
     private Integer limit;
 
     private GrnStatus grnStatus;
+    private UUID supplierId;
     private UUID purchaseOrderId;
     private LocalDateTime dateFrom;
     private LocalDateTime dateTo;

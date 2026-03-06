@@ -31,6 +31,7 @@ public interface GoodsReceivedNoteRepository extends JpaRepository<GoodsReceived
             "LOWER(s.supplier_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
             "LOWER(g.reference_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) AND " +
             "(CAST(:grnStatus AS text) IS NULL OR g.grn_status = CAST(:grnStatus AS text)) AND " +
+            "(CAST(:supplierId AS uuid) IS NULL OR po.supplier_id = CAST(:supplierId AS uuid)) AND " +
             "(CAST(:purchaseOrderId AS uuid) IS NULL OR g.purchase_order_id = CAST(:purchaseOrderId AS uuid)) AND " +
             "(CAST(:dateFrom AS timestamp) IS NULL OR g.created_at >= CAST(:dateFrom AS timestamp)) AND " +
             "(CAST(:dateTo AS timestamp) IS NULL OR g.created_at <= CAST(:dateTo AS timestamp)) " +
@@ -45,6 +46,7 @@ public interface GoodsReceivedNoteRepository extends JpaRepository<GoodsReceived
                     "LOWER(s.supplier_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
                     "LOWER(g.reference_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) AND " +
                     "(CAST(:grnStatus AS text) IS NULL OR g.grn_status = CAST(:grnStatus AS text)) AND " +
+                    "(CAST(:supplierId AS uuid) IS NULL OR po.supplier_id = CAST(:supplierId AS uuid)) AND " +
                     "(CAST(:purchaseOrderId AS uuid) IS NULL OR g.purchase_order_id = CAST(:purchaseOrderId AS uuid)) AND " +
                     "(CAST(:dateFrom AS timestamp) IS NULL OR g.created_at >= CAST(:dateFrom AS timestamp)) AND " +
                     "(CAST(:dateTo AS timestamp) IS NULL OR g.created_at <= CAST(:dateTo AS timestamp))",
@@ -52,6 +54,7 @@ public interface GoodsReceivedNoteRepository extends JpaRepository<GoodsReceived
     Page<GoodsReceivedNote> searchFiltered(@Param("shopId") UUID shopId,
                                             @Param("search") String search,
                                             @Param("grnStatus") String grnStatus,
+                                            @Param("supplierId") UUID supplierId,
                                             @Param("purchaseOrderId") UUID purchaseOrderId,
                                             @Param("dateFrom") LocalDateTime dateFrom,
                                             @Param("dateTo") LocalDateTime dateTo,
@@ -67,6 +70,7 @@ public interface GoodsReceivedNoteRepository extends JpaRepository<GoodsReceived
             "LOWER(s.supplier_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
             "LOWER(g.reference_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) AND " +
             "(CAST(:grnStatus AS text) IS NULL OR g.grn_status = CAST(:grnStatus AS text)) AND " +
+            "(CAST(:supplierId AS uuid) IS NULL OR po.supplier_id = CAST(:supplierId AS uuid)) AND " +
             "(CAST(:purchaseOrderId AS uuid) IS NULL OR g.purchase_order_id = CAST(:purchaseOrderId AS uuid)) AND " +
             "(CAST(:dateFrom AS timestamp) IS NULL OR g.created_at >= CAST(:dateFrom AS timestamp)) AND " +
             "(CAST(:dateTo AS timestamp) IS NULL OR g.created_at <= CAST(:dateTo AS timestamp)) " +
@@ -75,6 +79,7 @@ public interface GoodsReceivedNoteRepository extends JpaRepository<GoodsReceived
     List<GoodsReceivedNote> searchFilteredUnpaged(@Param("shopId") UUID shopId,
                                                    @Param("search") String search,
                                                    @Param("grnStatus") String grnStatus,
+                                                   @Param("supplierId") UUID supplierId,
                                                    @Param("purchaseOrderId") UUID purchaseOrderId,
                                                    @Param("dateFrom") LocalDateTime dateFrom,
                                                    @Param("dateTo") LocalDateTime dateTo);

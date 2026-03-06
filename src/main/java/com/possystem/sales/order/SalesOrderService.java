@@ -9,12 +9,11 @@ import com.possystem.inventory.Product;
 import com.possystem.inventory.ProductRepository;
 import com.possystem.inventory.ProductVariant;
 import com.possystem.inventory.ProductVariantRepository;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +39,7 @@ public class SalesOrderService {
 
     @Transactional
     public SalesOrderResponse save(SalesOrderRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateOrder(request, shopId);
@@ -49,7 +48,7 @@ public class SalesOrderService {
     }
 
     public ListResponse<SalesOrderResponse> fetch(SalesOrderFetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             SalesOrder order = salesOrderRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
@@ -85,7 +84,7 @@ public class SalesOrderService {
 
     @Transactional
     public SalesOrderResponse completeOrder(UUID orderId) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         SalesOrder order = salesOrderRepository.findByIdAndShopIdAndIsActiveTrue(orderId, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
@@ -118,7 +117,7 @@ public class SalesOrderService {
 
     @Transactional
     public SalesOrderResponse cancelOrder(UUID orderId) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         SalesOrder order = salesOrderRepository.findByIdAndShopIdAndIsActiveTrue(orderId, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
@@ -147,7 +146,7 @@ public class SalesOrderService {
 
     @Transactional
     public SalesOrderResponse addPayment(AddPaymentRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         SalesOrder order = salesOrderRepository.findByIdAndShopIdAndIsActiveTrue(request.getOrderId(), shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
@@ -197,7 +196,7 @@ public class SalesOrderService {
 
     @Transactional
     public void delete(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         SalesOrder order = salesOrderRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
@@ -211,7 +210,7 @@ public class SalesOrderService {
 
     @Transactional
     public int bulkDelete(List<UUID> ids) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         List<SalesOrder> orders = salesOrderRepository.findAllByIdInAndShopIdAndIsActiveTrue(ids, shopId);
         if (orders.isEmpty()) {
             throw new IllegalArgumentException("No orders found for the given IDs");
@@ -239,7 +238,7 @@ public class SalesOrderService {
         order.setDiscountValue(request.getDiscountValue());
         order.setReferenceNumber(request.getReferenceNumber());
         order.setNotes(request.getNotes());
-        order.setServedBy(getCurrentUserId());
+        order.setServedBy(SecurityContextUtil.getCurrentUserId());
         order.setOrderStatus(OrderStatus.PENDING);
         order.setPaymentStatus(PaymentStatus.UNPAID);
         order.setStockDeducted(false);
@@ -542,12 +541,24 @@ public class SalesOrderService {
             Customer customer = customerRepository.findByIdAndShopIdAndIsActiveTrue(order.getCustomerId(), shopId)
                     .orElseThrow(() -> new IllegalArgumentException("Customer not found for credit payment"));
 
-            if (customer.getBalanceCredit().compareTo(creditTotal) < 0) {
-                throw new IllegalArgumentException(
-                        "Insufficient customer credit. Available: " + customer.getBalanceCredit() +
-                        ", Required: " + creditTotal);
+            if (!Boolean.TRUE.equals(customer.getCreditEnabled())) {
+                throw new IllegalArgumentException("Credit is not enabled for customer: " + customer.getCustomerName());
             }
-            customer.setBalanceCredit(customer.getBalanceCredit().subtract(creditTotal));
+
+            BigDecimal outstanding = customer.getOutstandingBalance() != null ? customer.getOutstandingBalance() : BigDecimal.ZERO;
+            BigDecimal creditLimit = customer.getCreditLimit() != null ? customer.getCreditLimit() : BigDecimal.ZERO;
+            BigDecimal available = creditLimit.subtract(outstanding);
+
+            if (creditTotal.compareTo(available) > 0) {
+                throw new IllegalArgumentException(
+                        "Insufficient credit for " + customer.getCustomerName()
+                        + ". Credit limit: " + creditLimit
+                        + ", Outstanding: " + outstanding
+                        + ", Available: " + available
+                        + ", Required: " + creditTotal);
+            }
+
+            customer.setOutstandingBalance(outstanding.add(creditTotal));
             customerRepository.save(customer);
         }
     }
@@ -563,7 +574,8 @@ public class SalesOrderService {
         if (creditTotal.compareTo(BigDecimal.ZERO) > 0) {
             customerRepository.findByIdAndShopIdAndIsActiveTrue(order.getCustomerId(), shopId)
                     .ifPresent(customer -> {
-                        customer.setBalanceCredit(customer.getBalanceCredit().add(creditTotal));
+                        BigDecimal outstanding = customer.getOutstandingBalance() != null ? customer.getOutstandingBalance() : BigDecimal.ZERO;
+                        customer.setOutstandingBalance(outstanding.subtract(creditTotal).max(BigDecimal.ZERO));
                         customerRepository.save(customer);
                     });
         }
@@ -607,19 +619,4 @@ public class SalesOrderService {
         return code;
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
-
-    private UUID getCurrentUserId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        return principal.getId();
-    }
 }

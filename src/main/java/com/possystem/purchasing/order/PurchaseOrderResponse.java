@@ -2,7 +2,9 @@ package com.possystem.purchasing.order;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.possystem.purchasing.enums.PurchaseOrderStatus;
+import com.possystem.purchasing.invoice.SupplierInvoiceSummaryResponse;
 import com.possystem.sales.DiscountType;
+import com.possystem.sales.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +28,7 @@ public class PurchaseOrderResponse {
     private UUID supplierId;
     private String supplierName;
     private PurchaseOrderStatus orderStatus;
+    private PaymentStatus paymentStatus;
     private LocalDate orderDate;
     private LocalDate expectedDate;
     private BigDecimal subtotal;
@@ -35,6 +38,7 @@ public class PurchaseOrderResponse {
     private BigDecimal discountValue;
     private BigDecimal discountAmount;
     private BigDecimal totalAmount;
+    private BigDecimal amountPaid;
     private String referenceNumber;
     private String notes;
     private UUID orderedBy;
@@ -44,4 +48,5 @@ public class PurchaseOrderResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<PurchaseOrderItemResponse> items;
+    private List<SupplierInvoiceSummaryResponse> invoices;
 }

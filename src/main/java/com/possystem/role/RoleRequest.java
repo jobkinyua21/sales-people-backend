@@ -18,6 +18,9 @@ public class RoleRequest {
 
     private UUID id;
 
+    // Optional: TENANT_ADMIN can pass shopId to create a role scoped to a specific shop
+    private UUID shopId;
+
     @NotBlank(message = "Role name is required")
     private String roleName;
 

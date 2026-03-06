@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class SupplierController {
     private final SupplierService supplierService;
 
     @PostMapping("/save")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SUPPLIERS_CREATE') or hasAuthority('SUPPLIERS_EDIT')")
     public ResponseEntity<ApiResponse<SupplierResponse>> save(
             @Valid @RequestBody SupplierRequest request) {
         SupplierResponse response = supplierService.save(request);
@@ -33,18 +35,21 @@ public class SupplierController {
     }
 
     @PostMapping("/fetch")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SUPPLIERS_VIEW')")
     public ResponseEntity<ListResponse<SupplierResponse>> fetch(@RequestBody FetchRequest request) {
         ListResponse<SupplierResponse> response = supplierService.fetch(request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SUPPLIERS_DELETE')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         supplierService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Supplier deleted"));
     }
 
     @DeleteMapping("/bulk")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('SUPPLIERS_DELETE')")
     public ResponseEntity<ApiResponse<Void>> bulkDelete(@RequestBody List<UUID> ids) {
         int count = supplierService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null, count + " suppliers deleted"));

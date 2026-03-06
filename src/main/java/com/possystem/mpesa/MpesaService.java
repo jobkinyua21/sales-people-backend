@@ -5,11 +5,10 @@ import com.possystem.sales.PaymentMethod;
 import com.possystem.sales.SalesOrder;
 import com.possystem.sales.SalesOrderRepository;
 import com.possystem.sales.SalesOrderService;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -35,7 +34,7 @@ public class MpesaService {
 
     @Transactional
     public StkPushResponse initiateStkPush(StkPushRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         // Validate order exists
         SalesOrder order = salesOrderRepository.findByIdAndShopIdAndIsActiveTrue(request.getOrderId(), shopId)
@@ -173,16 +172,18 @@ public class MpesaService {
     // ==================== STATUS CHECK ====================
 
     public MpesaStatusResponse checkTransactionStatus(String checkoutRequestId) {
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         MpesaTransaction transaction = mpesaTransactionRepository
-                .findByCheckoutRequestId(checkoutRequestId)
+                .findByCheckoutRequestIdAndShopId(checkoutRequestId, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
 
         return buildStatusResponse(transaction);
     }
 
     public MpesaStatusResponse checkOrderPaymentStatus(UUID orderId) {
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         MpesaTransaction transaction = mpesaTransactionRepository
-                .findTopByOrderIdOrderByCreatedAtDesc(orderId)
+                .findTopByOrderIdAndShopIdOrderByCreatedAtDesc(orderId, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("No M-Pesa transaction found for this order"));
 
         return buildStatusResponse(transaction);
@@ -265,13 +266,4 @@ public class MpesaService {
         return null;
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

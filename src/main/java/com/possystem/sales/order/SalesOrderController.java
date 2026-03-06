@@ -4,8 +4,11 @@ import com.possystem.common.ApiResponse;
 import com.possystem.common.ListResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,8 +20,10 @@ import java.util.UUID;
 public class SalesOrderController {
 
     private final SalesOrderService salesOrderService;
+    private final SalesReceiptService salesReceiptService;
 
     @PostMapping("/save")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_CREATE') or hasAuthority('INVOICES_EDIT')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> save(
             @Valid @RequestBody SalesOrderRequest request) {
         SalesOrderResponse response = salesOrderService.save(request);
@@ -32,6 +37,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/fetch")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_VIEW')")
     public ResponseEntity<ListResponse<SalesOrderResponse>> fetch(
             @RequestBody SalesOrderFetchRequest request) {
         ListResponse<SalesOrderResponse> response = salesOrderService.fetch(request);
@@ -39,6 +45,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/complete")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_MANAGE')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> complete(
             @Valid @RequestBody SalesOrderActionRequest request) {
         SalesOrderResponse response = salesOrderService.completeOrder(request.getId());
@@ -46,6 +53,7 @@ public class SalesOrderController {
     }
 
     @PostMapping("/cancel")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_MANAGE')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> cancel(
             @Valid @RequestBody SalesOrderActionRequest request) {
         SalesOrderResponse response = salesOrderService.cancelOrder(request.getId());
@@ -53,19 +61,34 @@ public class SalesOrderController {
     }
 
     @PostMapping("/payment")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PAYMENTS_CREATE')")
     public ResponseEntity<ApiResponse<SalesOrderResponse>> addPayment(
             @Valid @RequestBody AddPaymentRequest request) {
         SalesOrderResponse response = salesOrderService.addPayment(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Payment added"));
     }
 
+    @PostMapping("/receipt")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_VIEW')")
+    public ResponseEntity<byte[]> downloadReceipt(@RequestBody SalesOrderActionRequest request) {
+        byte[] pdf = salesReceiptService.generateReceipt(request.getId());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "receipt.pdf");
+
+        return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+    }
+
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_DELETE')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         salesOrderService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Order deleted"));
     }
 
     @DeleteMapping("/bulk")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVOICES_DELETE')")
     public ResponseEntity<ApiResponse<Void>> bulkDelete(@RequestBody List<UUID> ids) {
         int count = salesOrderService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null, count + " orders deleted"));

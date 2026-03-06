@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,6 +25,7 @@ public class InventoryStockController {
     private final InventoryStockExportService inventoryStockExportService;
 
     @PostMapping("/save")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_CREATE') or hasAuthority('INVENTORY_EDIT')")
     public ResponseEntity<ApiResponse<InventoryStockResponse>> save(
             @Valid @RequestBody InventoryStockRequest request) {
         InventoryStockResponse response = inventoryStockService.save(request);
@@ -37,6 +39,7 @@ public class InventoryStockController {
     }
 
     @PostMapping("/fetch")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_VIEW')")
     public ResponseEntity<ListResponse<InventoryStockResponse>> fetch(
             @RequestBody InventoryStockFetchRequest request) {
         ListResponse<InventoryStockResponse> response = inventoryStockService.fetch(request);
@@ -44,18 +47,21 @@ public class InventoryStockController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_DELETE')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         inventoryStockService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Stock record deleted"));
     }
 
     @DeleteMapping("/bulk")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_DELETE')")
     public ResponseEntity<ApiResponse<Void>> bulkDelete(@RequestBody List<UUID> ids) {
         int count = inventoryStockService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null, count + " stock records deleted"));
     }
 
     @PostMapping("/template")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_CREATE')")
     public ResponseEntity<byte[]> downloadTemplate() {
         byte[] templateBytes = inventoryStockExcelService.generateTemplate();
 
@@ -69,6 +75,7 @@ public class InventoryStockController {
     }
 
     @PostMapping("/upload")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_CREATE')")
     public ResponseEntity<ApiResponse<StockUploadResponse>> uploadStock(
             @RequestParam("file") MultipartFile file) {
 
@@ -94,6 +101,7 @@ public class InventoryStockController {
     }
 
     @PostMapping("/export/excel")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_EXPORT')")
     public ResponseEntity<byte[]> exportExcel(@RequestBody InventoryStockFetchRequest request) {
         byte[] bytes = inventoryStockExportService.exportExcel(
                 request.getSearch(), request.getCategoryId(), request.getStockStatus());
@@ -108,6 +116,7 @@ public class InventoryStockController {
     }
 
     @PostMapping("/export/pdf")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('INVENTORY_EXPORT')")
     public ResponseEntity<byte[]> exportPdf(@RequestBody InventoryStockFetchRequest request) {
         byte[] bytes = inventoryStockExportService.exportPdf(
                 request.getSearch(), request.getCategoryId(), request.getStockStatus());

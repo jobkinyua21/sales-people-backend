@@ -1,12 +1,11 @@
 package com.possystem.inventory;
 
 import com.possystem.common.ListResponse;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +26,7 @@ public class InventoryStockService {
 
     @Transactional
     public InventoryStockResponse save(InventoryStockRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateStock(request, shopId);
@@ -36,7 +35,7 @@ public class InventoryStockService {
     }
 
     public ListResponse<InventoryStockResponse> fetch(InventoryStockFetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             InventoryStock stock = inventoryStockRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
@@ -66,7 +65,7 @@ public class InventoryStockService {
 
     @Transactional
     public void delete(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         InventoryStock stock = inventoryStockRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Stock record not found"));
         stock.setIsActive(false);
@@ -75,7 +74,7 @@ public class InventoryStockService {
 
     @Transactional
     public int bulkDelete(List<UUID> ids) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         List<InventoryStock> stocks = inventoryStockRepository.findAllByIdInAndShopIdAndIsActiveTrue(ids, shopId);
         if (stocks.isEmpty()) {
             throw new IllegalArgumentException("No stock records found for the given IDs");
@@ -170,13 +169,4 @@ public class InventoryStockService {
         return "IN_STOCK";
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

@@ -3,6 +3,7 @@ package com.possystem.purchasing.order;
 import com.possystem.audit.Auditable;
 import com.possystem.purchasing.enums.PurchaseOrderStatus;
 import com.possystem.sales.DiscountType;
+import com.possystem.sales.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,7 +20,8 @@ import java.util.UUID;
         @Index(name = "idx_po_supplier", columnList = "supplier_id"),
         @Index(name = "idx_po_status", columnList = "order_status"),
         @Index(name = "idx_po_number", columnList = "shop_id, po_number"),
-        @Index(name = "idx_po_created_at", columnList = "created_at DESC")
+        @Index(name = "idx_po_created_at", columnList = "created_at DESC"),
+        @Index(name = "idx_po_payment_status", columnList = "payment_status")
 })
 @Getter
 @Setter
@@ -98,6 +100,15 @@ public class PurchaseOrder extends Auditable {
 
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, length = 20)
+    @Builder.Default
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Column(name = "amount_paid", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal amountPaid = BigDecimal.ZERO;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

@@ -1,6 +1,7 @@
 package com.possystem.purchasing.order;
 
 import com.possystem.purchasing.enums.PurchaseOrderStatus;
+import com.possystem.sales.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class PurchaseOrderFetchRequest {
     private Integer limit;
 
     private PurchaseOrderStatus orderStatus;
+    private PaymentStatus paymentStatus;
     private UUID supplierId;
     private LocalDateTime dateFrom;
     private LocalDateTime dateTo;

@@ -1,11 +1,10 @@
 package com.possystem.inventory;
 
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,7 +39,7 @@ public class InventoryStockExcelService {
     // ==================== TEMPLATE GENERATION ====================
 
     public byte[] generateTemplate() {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet(SHEET_STOCK);
@@ -172,7 +171,7 @@ public class InventoryStockExcelService {
 
     @Transactional
     public StockUploadResponse processUpload(MultipartFile file) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         List<StockUploadResponse.RowError> errors = new ArrayList<>();
         List<StockUpdateRow> validRows = new ArrayList<>();
@@ -334,13 +333,4 @@ public class InventoryStockExcelService {
         };
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

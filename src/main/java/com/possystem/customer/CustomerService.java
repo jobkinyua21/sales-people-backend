@@ -2,15 +2,15 @@ package com.possystem.customer;
 
 import com.possystem.common.FetchRequest;
 import com.possystem.common.ListResponse;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +25,7 @@ public class CustomerService {
 
     @Transactional
     public CustomerResponse save(CustomerRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateCustomer(request, shopId);
@@ -34,12 +34,12 @@ public class CustomerService {
     }
 
     public ListResponse<CustomerResponse> fetch(FetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             Customer customer = customerRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
                     .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
-            List<CustomerResponse> result = List.of(modelMapper.map(customer, CustomerResponse.class));
+            List<CustomerResponse> result = List.of(buildResponse(customer));
             return ListResponse.of(result);
         }
 
@@ -49,20 +49,20 @@ public class CustomerService {
         if (limit == null) {
             List<Customer> all = customerRepository.searchAll(shopId, search);
             List<CustomerResponse> responses = all.stream()
-                    .map(c -> modelMapper.map(c, CustomerResponse.class))
+                    .map(this::buildResponse)
                     .toList();
             return ListResponse.of(responses);
         }
 
         PageRequest pageRequest = PageRequest.of(request.getStart(), limit);
         Page<Customer> page = customerRepository.searchAll(shopId, search, pageRequest);
-        Page<CustomerResponse> responsePage = page.map(c -> modelMapper.map(c, CustomerResponse.class));
+        Page<CustomerResponse> responsePage = page.map(this::buildResponse);
         return ListResponse.from(responsePage);
     }
 
     @Transactional
     public void delete(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         Customer customer = customerRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
         customer.setIsActive(false);
@@ -72,7 +72,7 @@ public class CustomerService {
 
     @Transactional
     public int bulkDelete(List<UUID> ids) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         List<Customer> customers = customerRepository.findAllByIdInAndShopIdAndIsActiveTrue(ids, shopId);
         if (customers.isEmpty()) {
             throw new IllegalArgumentException("No customers found for the given IDs");
@@ -104,7 +104,7 @@ public class CustomerService {
         if (customer.getStatus() == null) customer.setStatus(CustomerStatus.ACTIVE);
 
         Customer saved = customerRepository.save(customer);
-        return modelMapper.map(saved, CustomerResponse.class);
+        return buildResponse(saved);
     }
 
     private CustomerResponse updateCustomer(CustomerRequest request, UUID shopId) {
@@ -130,10 +130,21 @@ public class CustomerService {
         modelMapper.map(request, customer);
 
         Customer saved = customerRepository.save(customer);
-        return modelMapper.map(saved, CustomerResponse.class);
+        return buildResponse(saved);
     }
 
     // ==================== HELPERS ====================
+
+    private CustomerResponse buildResponse(Customer customer) {
+        CustomerResponse response = modelMapper.map(customer, CustomerResponse.class);
+        if (Boolean.TRUE.equals(customer.getCreditEnabled()) && customer.getCreditLimit() != null) {
+            BigDecimal outstanding = customer.getOutstandingBalance() != null ? customer.getOutstandingBalance() : BigDecimal.ZERO;
+            response.setAvailableCredit(customer.getCreditLimit().subtract(outstanding).max(BigDecimal.ZERO));
+        } else {
+            response.setAvailableCredit(BigDecimal.ZERO);
+        }
+        return response;
+    }
 
     private String generateCustomerCode(UUID shopId) {
         long count = customerRepository.countByShopId(shopId);
@@ -145,13 +156,4 @@ public class CustomerService {
         return code;
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

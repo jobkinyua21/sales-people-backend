@@ -9,6 +9,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "role", schema = "pos_core", indexes = {
         @Index(name = "idx_role_tenant", columnList = "tenant_id"),
+        @Index(name = "idx_role_shop", columnList = "shop_id"),
         @Index(name = "idx_role_active", columnList = "is_active")
 })
 @Getter
@@ -37,6 +38,9 @@ public class Role extends Auditable {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @Column(name = "shop_id")
+    private UUID shopId;
 
     @Column(name = "description", length = 255)
     private String description;

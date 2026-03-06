@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -19,6 +20,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping("/save")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('CATEGORIES_CREATE') or hasAuthority('CATEGORIES_EDIT')")
     public ResponseEntity<ApiResponse<CategoryResponse>> save(@Valid @RequestBody CategoryRequest request) {
         CategoryResponse response = categoryService.save(request);
         String message = request.getId() != null ? "Category updated" : "Category created";
@@ -31,12 +33,14 @@ public class CategoryController {
     }
 
     @PostMapping("/fetch")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('CATEGORIES_VIEW')")
     public ResponseEntity<ListResponse<CategoryResponse>> fetch(@RequestBody FetchRequest request) {
         ListResponse<CategoryResponse> response = categoryService.fetch(request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('CATEGORIES_DELETE')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         categoryService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Category deleted"));

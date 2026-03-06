@@ -9,13 +9,12 @@ import com.possystem.purchasing.order.PurchaseOrder;
 import com.possystem.purchasing.order.PurchaseOrderItem;
 import com.possystem.purchasing.order.PurchaseOrderRepository;
 import com.possystem.purchasing.order.PurchaseOrderService;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import com.possystem.supplier.Supplier;
 import com.possystem.supplier.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +42,7 @@ public class GoodsReceivedNoteService {
 
     @Transactional
     public GrnResponse save(GrnRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateGrn(request, shopId);
@@ -52,7 +51,7 @@ public class GoodsReceivedNoteService {
     }
 
     public ListResponse<GrnResponse> fetch(GrnFetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             GoodsReceivedNote grn = grnRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
@@ -63,6 +62,7 @@ public class GoodsReceivedNoteService {
 
         String search = request.getSearch();
         String grnStatus = request.getGrnStatus() != null ? request.getGrnStatus().name() : null;
+        UUID supplierId = request.getSupplierId();
         UUID purchaseOrderId = request.getPurchaseOrderId();
         LocalDateTime dateFrom = request.getDateFrom();
         LocalDateTime dateTo = request.getDateTo();
@@ -70,7 +70,7 @@ public class GoodsReceivedNoteService {
 
         if (limit == null) {
             List<GoodsReceivedNote> all = grnRepository.searchFilteredUnpaged(
-                    shopId, search, grnStatus, purchaseOrderId, dateFrom, dateTo);
+                    shopId, search, grnStatus, supplierId, purchaseOrderId, dateFrom, dateTo);
             List<GrnResponse> responses = all.stream()
                     .map(g -> buildResponse(g, shopId))
                     .toList();
@@ -79,7 +79,7 @@ public class GoodsReceivedNoteService {
 
         PageRequest pageRequest = PageRequest.of(request.getStart(), limit);
         Page<GoodsReceivedNote> page = grnRepository.searchFiltered(
-                shopId, search, grnStatus, purchaseOrderId, dateFrom, dateTo, pageRequest);
+                shopId, search, grnStatus, supplierId, purchaseOrderId, dateFrom, dateTo, pageRequest);
         Page<GrnResponse> responsePage = page.map(g -> buildResponse(g, shopId));
         return ListResponse.from(responsePage);
     }
@@ -88,7 +88,7 @@ public class GoodsReceivedNoteService {
 
     @Transactional
     public GrnResponse completeGrn(UUID grnId) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         GoodsReceivedNote grn = grnRepository.findByIdAndShopIdAndIsActiveTrue(grnId, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("GRN not found"));
 
@@ -164,7 +164,7 @@ public class GoodsReceivedNoteService {
 
     @Transactional
     public GrnResponse cancelGrn(UUID grnId) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         GoodsReceivedNote grn = grnRepository.findByIdAndShopIdAndIsActiveTrue(grnId, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("GRN not found"));
 
@@ -240,7 +240,7 @@ public class GoodsReceivedNoteService {
                 .grnNumber(grnNumber)
                 .purchaseOrderId(request.getPurchaseOrderId())
                 .receivedDate(request.getReceivedDate() != null ? request.getReceivedDate() : LocalDate.now())
-                .receivedBy(getCurrentUserId())
+                .receivedBy(SecurityContextUtil.getCurrentUserId())
                 .referenceNumber(request.getReferenceNumber())
                 .notes(request.getNotes())
                 .build();
@@ -366,6 +366,7 @@ public class GoodsReceivedNoteService {
                             .quantityReceived(item.getQuantityReceived())
                             .quantityDamaged(item.getQuantityDamaged())
                             .quantityMissing(item.getQuantityMissing())
+                            .quantityReturned(item.getReturnedQuantity() != null ? item.getReturnedQuantity() : BigDecimal.ZERO)
                             .unitCost(item.getUnitCost())
                             .totalCost(item.getTotalCost())
                             .notes(item.getNotes())
@@ -392,21 +393,4 @@ public class GoodsReceivedNoteService {
                 .build();
     }
 
-    // ==================== HELPERS ====================
-
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
-
-    private UUID getCurrentUserId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        return principal.getId();
-    }
 }

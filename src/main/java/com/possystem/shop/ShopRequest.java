@@ -1,9 +1,11 @@
 package com.possystem.shop;
 
+import com.possystem.common.ValidationGroups;
 import com.possystem.shop.enums.BillingCycle;
 import com.possystem.shop.enums.PaymentMode;
 import com.possystem.shop.enums.ShopStatus;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +24,7 @@ public class ShopRequest {
 
     private UUID businessTypeId;
 
-    @NotBlank(message = "Shop name is required")
+    @NotBlank(message = "Shop name is required", groups = ValidationGroups.Create.class)
     private String shopName;
 
     private String address;
@@ -39,14 +41,16 @@ public class ShopRequest {
 
     private ShopStatus status;
 
-    // Subscription fields (required on create, validated in service)
+    @NotNull(message = "Subscription plan is required", groups = ValidationGroups.Create.class)
     private UUID subscriptionPlanId;
 
+    @NotNull(message = "Billing cycle is required", groups = ValidationGroups.Create.class)
     private BillingCycle billingCycle;
 
+    @NotNull(message = "Payment mode is required", groups = ValidationGroups.Create.class)
     private PaymentMode paymentMode;
 
-    // Shop manager fields (required on create, validated in service)
+    // Shop manager fields (validated in service on create)
     private String managerFirstName;
 
     private String managerLastName;

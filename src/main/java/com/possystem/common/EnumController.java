@@ -10,6 +10,11 @@ import com.possystem.sales.PaymentMethod;
 import com.possystem.sales.PaymentStatus;
 import com.possystem.purchasing.enums.GrnStatus;
 import com.possystem.purchasing.enums.PurchaseOrderStatus;
+import com.possystem.purchasing.enums.PurchaseReturnStatus;
+import com.possystem.purchasing.enums.ReturnReason;
+import com.possystem.purchasing.enums.SupplierInvoiceStatus;
+import com.possystem.expense.enums.ExpenseCategoryStatus;
+import com.possystem.expense.enums.ExpenseStatus;
 import com.possystem.supplier.SupplierStatus;
 import com.possystem.inventory.ProductType;
 import com.possystem.inventory.ProductVariantStatus;
@@ -61,6 +66,11 @@ public class EnumController {
         enums.put("discountType", enumValues(DiscountType.class));
         enums.put("purchaseOrderStatus", enumValues(PurchaseOrderStatus.class));
         enums.put("grnStatus", enumValues(GrnStatus.class));
+        enums.put("purchaseReturnStatus", enumValues(PurchaseReturnStatus.class));
+        enums.put("returnReason", enumValues(ReturnReason.class));
+        enums.put("supplierInvoiceStatus", enumValues(SupplierInvoiceStatus.class));
+        enums.put("expenseCategoryStatus", enumValues(ExpenseCategoryStatus.class));
+        enums.put("expenseStatus", enumValues(ExpenseStatus.class));
         return ResponseEntity.ok(enums);
     }
 

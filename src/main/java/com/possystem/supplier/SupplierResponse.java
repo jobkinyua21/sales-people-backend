@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -34,6 +35,9 @@ public class SupplierResponse {
     private String website;
     private String notes;
     private SupplierStatus status;
+    private BigDecimal totalPurchases;
+    private BigDecimal totalPaid;
+    private BigDecimal outstandingBalance;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

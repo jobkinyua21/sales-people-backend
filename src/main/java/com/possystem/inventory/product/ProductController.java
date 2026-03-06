@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,6 +25,7 @@ public class ProductController {
     private final ProductExcelService productExcelService;
 
     @PostMapping("/save")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PRODUCTS_CREATE') or hasAuthority('PRODUCTS_EDIT')")
     public ResponseEntity<ApiResponse<ProductResponse>> save(
             @Valid @RequestBody ProductRequest request) {
         ProductResponse response = productService.save(request);
@@ -37,24 +39,28 @@ public class ProductController {
     }
 
     @PostMapping("/fetch")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PRODUCTS_VIEW')")
     public ResponseEntity<ListResponse<ProductResponse>> fetch(@RequestBody FetchRequest request) {
         ListResponse<ProductResponse> response = productService.fetch(request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PRODUCTS_DELETE')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         productService.delete(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Product deleted"));
     }
 
     @DeleteMapping("/bulk")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PRODUCTS_DELETE')")
     public ResponseEntity<ApiResponse<Void>> bulkDelete(@RequestBody List<UUID> ids) {
         int count = productService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null, count + " products deleted"));
     }
 
     @PostMapping("/template")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PRODUCTS_CREATE')")
     public ResponseEntity<byte[]> downloadTemplate() {
         byte[] templateBytes = productExcelService.generateTemplate();
 
@@ -68,6 +74,7 @@ public class ProductController {
     }
 
     @PostMapping("/upload")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PRODUCTS_CREATE')")
     public ResponseEntity<ApiResponse<ProductUploadResponse>> uploadProducts(
             @RequestParam("file") MultipartFile file) {
 

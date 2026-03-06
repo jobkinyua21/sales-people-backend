@@ -268,3 +268,185 @@ ON CONFLICT (permission_code) DO NOTHING;
 INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
 VALUES (gen_random_uuid(), 'SHOP_PROFILE_EDIT', 'Edit Shop Profile', 'SHOP_PROFILE', 'EDIT', 'Modify shop profile details')
 ON CONFLICT (permission_code) DO NOTHING;
+
+-- SUPPLIERS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIERS_VIEW', 'View Suppliers', 'SUPPLIERS', 'VIEW', 'View supplier list and details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIERS_CREATE', 'Create Suppliers', 'SUPPLIERS', 'CREATE', 'Add new suppliers')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIERS_EDIT', 'Edit Suppliers', 'SUPPLIERS', 'EDIT', 'Modify supplier information')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIERS_DELETE', 'Delete Suppliers', 'SUPPLIERS', 'DELETE', 'Remove suppliers')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIERS_EXPORT', 'Export Suppliers', 'SUPPLIERS', 'EXPORT', 'Export supplier data')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- PURCHASE_ORDERS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_ORDERS_VIEW', 'View Purchase Orders', 'PURCHASE_ORDERS', 'VIEW', 'View purchase order list and details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_ORDERS_CREATE', 'Create Purchase Orders', 'PURCHASE_ORDERS', 'CREATE', 'Create new purchase orders')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_ORDERS_EDIT', 'Edit Purchase Orders', 'PURCHASE_ORDERS', 'EDIT', 'Modify purchase order details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_ORDERS_DELETE', 'Delete Purchase Orders', 'PURCHASE_ORDERS', 'DELETE', 'Remove purchase orders')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_ORDERS_EXPORT', 'Export Purchase Orders', 'PURCHASE_ORDERS', 'EXPORT', 'Export purchase order data')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- Purchase payment permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_PAYMENTS_VIEW', 'View Purchase Payments', 'PURCHASE_PAYMENTS', 'VIEW', 'View purchase payment records')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_PAYMENTS_CREATE', 'Create Purchase Payments', 'PURCHASE_PAYMENTS', 'CREATE', 'Record payments to suppliers')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- Supplier invoice permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIER_INVOICES_VIEW', 'View Supplier Invoices', 'SUPPLIER_INVOICES', 'VIEW', 'View supplier invoices')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIER_INVOICES_CREATE', 'Create Supplier Invoices', 'SUPPLIER_INVOICES', 'CREATE', 'Create new supplier invoices')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIER_INVOICES_EDIT', 'Edit Supplier Invoices', 'SUPPLIER_INVOICES', 'EDIT', 'Modify supplier invoices')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIER_INVOICES_DELETE', 'Delete Supplier Invoices', 'SUPPLIER_INVOICES', 'DELETE', 'Delete supplier invoices')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SUPPLIER_INVOICES_APPROVE', 'Approve Supplier Invoices', 'SUPPLIER_INVOICES', 'MANAGE', 'Approve supplier invoices for payment')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- GRN permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'GRN_VIEW', 'View GRN', 'GRN', 'VIEW', 'View goods received notes')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'GRN_CREATE', 'Create GRN', 'GRN', 'CREATE', 'Create new goods received notes')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'GRN_EDIT', 'Edit GRN', 'GRN', 'EDIT', 'Modify goods received notes')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- PURCHASE_RETURNS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_RETURNS_VIEW', 'View Purchase Returns', 'PURCHASE_RETURNS', 'VIEW', 'View purchase return list and details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_RETURNS_CREATE', 'Create Purchase Returns', 'PURCHASE_RETURNS', 'CREATE', 'Create new purchase returns')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_RETURNS_EDIT', 'Edit Purchase Returns', 'PURCHASE_RETURNS', 'EDIT', 'Modify purchase return details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PURCHASE_RETURNS_DELETE', 'Delete Purchase Returns', 'PURCHASE_RETURNS', 'DELETE', 'Remove purchase returns')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- EXPENSES permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSES_VIEW', 'View Expenses', 'EXPENSES', 'VIEW', 'View expense list and details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSES_CREATE', 'Create Expenses', 'EXPENSES', 'CREATE', 'Create new expenses')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSES_EDIT', 'Edit Expenses', 'EXPENSES', 'EDIT', 'Modify expense details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSES_DELETE', 'Delete Expenses', 'EXPENSES', 'DELETE', 'Remove expenses')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSES_EXPORT', 'Export Expenses', 'EXPENSES', 'EXPORT', 'Export expense data')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSES_MANAGE', 'Manage Expenses', 'EXPENSES', 'MANAGE', 'Approve, reject and manage expense lifecycle')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- EXPENSE_CATEGORIES permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSE_CATEGORIES_VIEW', 'View Expense Categories', 'EXPENSE_CATEGORIES', 'VIEW', 'View expense category list')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSE_CATEGORIES_CREATE', 'Create Expense Categories', 'EXPENSE_CATEGORIES', 'CREATE', 'Create new expense categories')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSE_CATEGORIES_EDIT', 'Edit Expense Categories', 'EXPENSE_CATEGORIES', 'EDIT', 'Modify expense category details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'EXPENSE_CATEGORIES_DELETE', 'Delete Expense Categories', 'EXPENSE_CATEGORIES', 'DELETE', 'Remove expense categories')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- INVENTORY permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'INVENTORY_VIEW', 'View Inventory', 'INVENTORY', 'VIEW', 'View inventory stock levels')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'INVENTORY_CREATE', 'Create Inventory', 'INVENTORY', 'CREATE', 'Add new inventory stock records')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'INVENTORY_EDIT', 'Edit Inventory', 'INVENTORY', 'EDIT', 'Modify inventory stock levels')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'INVENTORY_DELETE', 'Delete Inventory', 'INVENTORY', 'DELETE', 'Remove inventory stock records')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'INVENTORY_EXPORT', 'Export Inventory', 'INVENTORY', 'EXPORT', 'Export inventory data')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- CATEGORIES permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'CATEGORIES_VIEW', 'View Categories', 'CATEGORIES', 'VIEW', 'View product category list')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'CATEGORIES_CREATE', 'Create Categories', 'CATEGORIES', 'CREATE', 'Create new product categories')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'CATEGORIES_EDIT', 'Edit Categories', 'CATEGORIES', 'EDIT', 'Modify product category details')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'CATEGORIES_DELETE', 'Delete Categories', 'CATEGORIES', 'DELETE', 'Remove product categories')
+ON CONFLICT (permission_code) DO NOTHING;

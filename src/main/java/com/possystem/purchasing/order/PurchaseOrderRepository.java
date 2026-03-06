@@ -29,6 +29,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
             "LOWER(s.supplier_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
             "LOWER(po.reference_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) AND " +
             "(CAST(:orderStatus AS text) IS NULL OR po.order_status = CAST(:orderStatus AS text)) AND " +
+            "(CAST(:paymentStatus AS text) IS NULL OR po.payment_status = CAST(:paymentStatus AS text)) AND " +
             "(CAST(:supplierId AS uuid) IS NULL OR po.supplier_id = CAST(:supplierId AS uuid)) AND " +
             "(CAST(:dateFrom AS timestamp) IS NULL OR po.created_at >= CAST(:dateFrom AS timestamp)) AND " +
             "(CAST(:dateTo AS timestamp) IS NULL OR po.created_at <= CAST(:dateTo AS timestamp)) " +
@@ -41,6 +42,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
                     "LOWER(s.supplier_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
                     "LOWER(po.reference_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) AND " +
                     "(CAST(:orderStatus AS text) IS NULL OR po.order_status = CAST(:orderStatus AS text)) AND " +
+                    "(CAST(:paymentStatus AS text) IS NULL OR po.payment_status = CAST(:paymentStatus AS text)) AND " +
                     "(CAST(:supplierId AS uuid) IS NULL OR po.supplier_id = CAST(:supplierId AS uuid)) AND " +
                     "(CAST(:dateFrom AS timestamp) IS NULL OR po.created_at >= CAST(:dateFrom AS timestamp)) AND " +
                     "(CAST(:dateTo AS timestamp) IS NULL OR po.created_at <= CAST(:dateTo AS timestamp))",
@@ -48,6 +50,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
     Page<PurchaseOrder> searchFiltered(@Param("shopId") UUID shopId,
                                        @Param("search") String search,
                                        @Param("orderStatus") String orderStatus,
+                                       @Param("paymentStatus") String paymentStatus,
                                        @Param("supplierId") UUID supplierId,
                                        @Param("dateFrom") LocalDateTime dateFrom,
                                        @Param("dateTo") LocalDateTime dateTo,
@@ -61,6 +64,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
             "LOWER(s.supplier_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) OR " +
             "LOWER(po.reference_number) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))) AND " +
             "(CAST(:orderStatus AS text) IS NULL OR po.order_status = CAST(:orderStatus AS text)) AND " +
+            "(CAST(:paymentStatus AS text) IS NULL OR po.payment_status = CAST(:paymentStatus AS text)) AND " +
             "(CAST(:supplierId AS uuid) IS NULL OR po.supplier_id = CAST(:supplierId AS uuid)) AND " +
             "(CAST(:dateFrom AS timestamp) IS NULL OR po.created_at >= CAST(:dateFrom AS timestamp)) AND " +
             "(CAST(:dateTo AS timestamp) IS NULL OR po.created_at <= CAST(:dateTo AS timestamp)) " +
@@ -69,6 +73,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
     List<PurchaseOrder> searchFilteredUnpaged(@Param("shopId") UUID shopId,
                                               @Param("search") String search,
                                               @Param("orderStatus") String orderStatus,
+                                              @Param("paymentStatus") String paymentStatus,
                                               @Param("supplierId") UUID supplierId,
                                               @Param("dateFrom") LocalDateTime dateFrom,
                                               @Param("dateTo") LocalDateTime dateTo);

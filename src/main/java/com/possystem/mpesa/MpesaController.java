@@ -1,10 +1,12 @@
 package com.possystem.mpesa;
 
 import com.possystem.common.ApiResponse;
+import com.possystem.security.RequiresModule;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -19,7 +21,9 @@ public class MpesaController {
     /**
      * Initiate STK push — called by the cashier/frontend (authenticated).
      */
+    @RequiresModule("PAYMENTS")
     @PostMapping("/api/v1/mpesa/stkpush")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PAYMENTS_CREATE')")
     public ResponseEntity<ApiResponse<StkPushResponse>> initiateStkPush(
             @Valid @RequestBody StkPushRequest request) {
         StkPushResponse response = mpesaService.initiateStkPush(request);
@@ -31,7 +35,9 @@ public class MpesaController {
      * Pass checkoutRequestId or orderId in the request body.
      * Frontend polls this after initiating STK push.
      */
+    @RequiresModule("PAYMENTS")
     @PostMapping("/api/v1/mpesa/status")
+    @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('PAYMENTS_VIEW')")
     public ResponseEntity<ApiResponse<MpesaStatusResponse>> checkStatus(
             @RequestBody MpesaStatusRequest request) {
         MpesaStatusResponse response;

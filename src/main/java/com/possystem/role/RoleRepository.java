@@ -18,9 +18,14 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
 
     boolean existsByTenantIdAndRoleNameIgnoreCase(UUID tenantId, String roleName);
 
+    boolean existsByShopIdAndRoleNameIgnoreCase(UUID shopId, String roleName);
+
     Optional<Role> findByTenantIdAndRoleNameIgnoreCaseAndRoleType(UUID tenantId, String roleName, RoleType roleType);
 
-    @Query("SELECT r FROM Role r WHERE r.tenantId = :tenantId AND " +
+    Optional<Role> findByShopIdAndRoleNameIgnoreCaseAndRoleType(UUID shopId, String roleName, RoleType roleType);
+
+    // Tenant-level roles (shopId IS NULL) — for TENANT_ADMIN
+    @Query("SELECT r FROM Role r WHERE r.tenantId = :tenantId AND r.shopId IS NULL AND " +
             "(:search IS NULL OR :search = '' OR " +
             "LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
@@ -29,7 +34,7 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
             "ORDER BY r.createdAt DESC")
     Page<Role> searchAll(@Param("tenantId") UUID tenantId, @Param("search") String search, Pageable pageable);
 
-    @Query("SELECT r FROM Role r WHERE r.tenantId = :tenantId AND " +
+    @Query("SELECT r FROM Role r WHERE r.tenantId = :tenantId AND r.shopId IS NULL AND " +
             "(:search IS NULL OR :search = '' OR " +
             "LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
@@ -37,4 +42,44 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
             "LOWER(CAST(r.roleType AS string)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
             "ORDER BY r.createdAt DESC")
     List<Role> searchAll(@Param("tenantId") UUID tenantId, @Param("search") String search);
+
+    // Shop-level roles — for SHOP_MANAGER
+    @Query("SELECT r FROM Role r WHERE r.shopId = :shopId AND " +
+            "(:search IS NULL OR :search = '' OR " +
+            "LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(r.roleType AS string)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY r.createdAt DESC")
+    Page<Role> searchByShop(@Param("shopId") UUID shopId, @Param("search") String search, Pageable pageable);
+
+    @Query("SELECT r FROM Role r WHERE r.shopId = :shopId AND " +
+            "(:search IS NULL OR :search = '' OR " +
+            "LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(r.roleType AS string)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY r.createdAt DESC")
+    List<Role> searchByShop(@Param("shopId") UUID shopId, @Param("search") String search);
+
+    // All roles visible to a shop (shop-level + tenant-level)
+    @Query("SELECT r FROM Role r WHERE (r.shopId = :shopId OR (r.tenantId = :tenantId AND r.shopId IS NULL)) AND " +
+            "(:search IS NULL OR :search = '' OR " +
+            "LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(r.roleType AS string)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY r.createdAt DESC")
+    Page<Role> searchByShopAndTenant(@Param("shopId") UUID shopId, @Param("tenantId") UUID tenantId,
+                                     @Param("search") String search, Pageable pageable);
+
+    @Query("SELECT r FROM Role r WHERE (r.shopId = :shopId OR (r.tenantId = :tenantId AND r.shopId IS NULL)) AND " +
+            "(:search IS NULL OR :search = '' OR " +
+            "LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(r.description) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(r.roleType AS string)) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "ORDER BY r.createdAt DESC")
+    List<Role> searchByShopAndTenant(@Param("shopId") UUID shopId, @Param("tenantId") UUID tenantId,
+                                     @Param("search") String search);
 }

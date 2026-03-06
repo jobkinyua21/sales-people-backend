@@ -26,6 +26,7 @@ public class GrnItemResponse {
     private BigDecimal quantityReceived;
     private BigDecimal quantityDamaged;
     private BigDecimal quantityMissing;
+    private BigDecimal quantityReturned;
     private BigDecimal unitCost;
     private BigDecimal totalCost;
     private String notes;

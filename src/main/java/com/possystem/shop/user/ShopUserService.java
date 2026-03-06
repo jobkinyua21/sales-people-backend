@@ -3,13 +3,13 @@ package com.possystem.shop;
 import com.possystem.auth.user.User;
 import com.possystem.auth.user.UserRepository;
 import com.possystem.common.*;
+import com.possystem.security.SecurityContextUtil;
 import com.possystem.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,7 @@ public class ShopUserService {
 
     @Transactional
     public ShopUserResponse save(ShopUserRequest request) {
-        UserPrincipal principal = getCurrentPrincipal();
+        UserPrincipal principal = SecurityContextUtil.getCurrentPrincipal();
         UUID shopId = principal.getShopId();
         UUID tenantId = principal.getTenantId();
 
@@ -137,7 +137,7 @@ public class ShopUserService {
     }
 
     public ListResponse<ShopUserResponse> fetch(FetchRequest request) {
-        UserPrincipal principal = getCurrentPrincipal();
+        UserPrincipal principal = SecurityContextUtil.getCurrentPrincipal();
         UUID shopId = principal.getShopId();
 
         if (shopId == null) {
@@ -177,7 +177,7 @@ public class ShopUserService {
 
     @Transactional
     public void delete(UUID id) {
-        UserPrincipal principal = getCurrentPrincipal();
+        UserPrincipal principal = SecurityContextUtil.getCurrentPrincipal();
         UUID shopId = principal.getShopId();
 
         if (shopId == null) {
@@ -279,8 +279,4 @@ public class ShopUserService {
         }
     }
 
-    private UserPrincipal getCurrentPrincipal() {
-        return (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-    }
 }

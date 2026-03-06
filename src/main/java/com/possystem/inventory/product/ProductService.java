@@ -2,12 +2,11 @@ package com.possystem.inventory;
 
 import com.possystem.common.FetchRequest;
 import com.possystem.common.ListResponse;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +31,7 @@ public class ProductService {
 
     @Transactional
     public ProductResponse save(ProductRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateProduct(request, shopId);
@@ -41,7 +40,7 @@ public class ProductService {
     }
 
     public ListResponse<ProductResponse> fetch(FetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             Product product = productRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
@@ -69,7 +68,7 @@ public class ProductService {
 
     @Transactional
     public void delete(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         Product product = productRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
@@ -82,7 +81,7 @@ public class ProductService {
 
     @Transactional
     public int bulkDelete(List<UUID> ids) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         List<Product> products = productRepository.findAllByIdInAndShopIdAndIsActiveTrue(ids, shopId);
         if (products.isEmpty()) {
             throw new IllegalArgumentException("No products found for the given IDs");
@@ -354,13 +353,4 @@ public class ProductService {
         return code;
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

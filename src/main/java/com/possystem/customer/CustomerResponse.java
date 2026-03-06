@@ -24,7 +24,11 @@ public class CustomerResponse {
     private String contactNumber;
     private String email;
     private CustomerGender gender;
-    private BigDecimal balanceCredit;
+    private Boolean creditEnabled;
+    private BigDecimal creditLimit;
+    private Integer creditTermsDays;
+    private BigDecimal outstandingBalance;
+    private BigDecimal availableCredit;
     private String tinNumber;
     private String physicalAddress;
     private BigDecimal totalPurchases;

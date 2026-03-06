@@ -12,12 +12,11 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -167,7 +166,7 @@ public class InventoryStockExportService {
     // ==================== HELPERS ====================
 
     private List<StockExportRow> fetchExportData(String search, UUID categoryId, String stockStatus) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         List<InventoryStock> stocks = inventoryStockRepository
                 .searchFiltered(shopId, search, categoryId, stockStatus);
@@ -222,16 +221,6 @@ public class InventoryStockExportService {
 
     private String formatDecimal(BigDecimal value) {
         return value != null ? value.stripTrailingZeros().toPlainString() : "";
-    }
-
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
     }
 
     private static class StockExportRow {

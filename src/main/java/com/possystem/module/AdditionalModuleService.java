@@ -30,7 +30,11 @@ public class AdditionalModuleService {
             modelMapper.map(request, module);
         } else {
             module = modelMapper.map(request, AdditionalModule.class);
-            module.setModuleCode(generateModuleCode());
+            String code = generateModuleCode(request.getModuleName());
+            if (additionalModuleRepository.existsByModuleCode(code)) {
+                throw new IllegalArgumentException("Module code '" + code + "' already exists");
+            }
+            module.setModuleCode(code);
             if (module.getCurrency() == null) module.setCurrency("KES");
             if (module.getStatus() == null) module.setStatus(ModuleStatus.ACTIVE);
         }
@@ -72,13 +76,10 @@ public class AdditionalModuleService {
         additionalModuleRepository.deleteById(id);
     }
 
-    private String generateModuleCode() {
-        long count = additionalModuleRepository.count();
-        String code;
-        do {
-            count++;
-            code = String.format("MOD-%04d", count);
-        } while (additionalModuleRepository.existsByModuleCode(code));
-        return code;
+    private String generateModuleCode(String moduleName) {
+        return moduleName.trim()
+                .toUpperCase()
+                .replaceAll("[^A-Z0-9]+", "_")
+                .replaceAll("^_|_$", "");
     }
 }

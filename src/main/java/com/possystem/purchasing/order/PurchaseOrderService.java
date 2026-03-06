@@ -6,14 +6,15 @@ import com.possystem.inventory.ProductRepository;
 import com.possystem.inventory.ProductVariant;
 import com.possystem.inventory.ProductVariantRepository;
 import com.possystem.purchasing.enums.PurchaseOrderStatus;
+import com.possystem.purchasing.enums.SupplierInvoiceStatus;
+import com.possystem.purchasing.invoice.*;
 import com.possystem.sales.DiscountType;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import com.possystem.supplier.Supplier;
 import com.possystem.supplier.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,12 +33,13 @@ public class PurchaseOrderService {
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
     private final SupplierRepository supplierRepository;
+    private final SupplierInvoicePurchaseOrderRepository sipoRepository;
 
     // ==================== CRUD ====================
 
     @Transactional
     public PurchaseOrderResponse save(PurchaseOrderRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateOrder(request, shopId);
@@ -46,7 +48,7 @@ public class PurchaseOrderService {
     }
 
     public ListResponse<PurchaseOrderResponse> fetch(PurchaseOrderFetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             PurchaseOrder po = purchaseOrderRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
@@ -57,6 +59,7 @@ public class PurchaseOrderService {
 
         String search = request.getSearch();
         String orderStatus = request.getOrderStatus() != null ? request.getOrderStatus().name() : null;
+        String paymentStatus = request.getPaymentStatus() != null ? request.getPaymentStatus().name() : null;
         UUID supplierId = request.getSupplierId();
         LocalDateTime dateFrom = request.getDateFrom();
         LocalDateTime dateTo = request.getDateTo();
@@ -64,7 +67,7 @@ public class PurchaseOrderService {
 
         if (limit == null) {
             List<PurchaseOrder> all = purchaseOrderRepository.searchFilteredUnpaged(
-                    shopId, search, orderStatus, supplierId, dateFrom, dateTo);
+                    shopId, search, orderStatus, paymentStatus, supplierId, dateFrom, dateTo);
             List<PurchaseOrderResponse> responses = all.stream()
                     .map(po -> buildResponse(po, shopId))
                     .toList();
@@ -73,14 +76,14 @@ public class PurchaseOrderService {
 
         PageRequest pageRequest = PageRequest.of(request.getStart(), limit);
         Page<PurchaseOrder> page = purchaseOrderRepository.searchFiltered(
-                shopId, search, orderStatus, supplierId, dateFrom, dateTo, pageRequest);
+                shopId, search, orderStatus, paymentStatus, supplierId, dateFrom, dateTo, pageRequest);
         Page<PurchaseOrderResponse> responsePage = page.map(po -> buildResponse(po, shopId));
         return ListResponse.from(responsePage);
     }
 
     @Transactional
     public void delete(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         PurchaseOrder po = purchaseOrderRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase order not found"));
 
@@ -94,7 +97,7 @@ public class PurchaseOrderService {
 
     @Transactional
     public void bulkDelete(List<UUID> ids) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         List<PurchaseOrder> orders = purchaseOrderRepository.findAllByIdInAndShopIdAndIsActiveTrue(ids, shopId);
         for (PurchaseOrder po : orders) {
             if (po.getOrderStatus() == PurchaseOrderStatus.DRAFT || po.getOrderStatus() == PurchaseOrderStatus.CANCELLED) {
@@ -108,7 +111,7 @@ public class PurchaseOrderService {
 
     @Transactional
     public PurchaseOrderResponse submitOrder(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         PurchaseOrder po = purchaseOrderRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase order not found"));
 
@@ -117,24 +120,45 @@ public class PurchaseOrderService {
         }
 
         po.setOrderStatus(PurchaseOrderStatus.ORDERED);
-        po.setOrderedBy(getCurrentUserId());
+        po.setOrderedBy(SecurityContextUtil.getCurrentUserId());
         po.setOrderedAt(LocalDateTime.now());
         if (po.getOrderDate() == null) {
             po.setOrderDate(java.time.LocalDate.now());
         }
 
         PurchaseOrder saved = purchaseOrderRepository.save(po);
+
+        // Update supplier balance
+        Supplier supplier = supplierRepository.findByIdAndShopIdAndIsActiveTrue(po.getSupplierId(), shopId)
+                .orElse(null);
+        if (supplier != null) {
+            supplier.setTotalPurchases(supplier.getTotalPurchases().add(po.getTotalAmount()));
+            supplier.setOutstandingBalance(supplier.getTotalPurchases().subtract(supplier.getTotalPaid()));
+            supplierRepository.save(supplier);
+        }
+
         return buildResponse(saved, shopId);
     }
 
     @Transactional
     public PurchaseOrderResponse cancelOrder(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         PurchaseOrder po = purchaseOrderRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase order not found"));
 
         if (po.getOrderStatus() == PurchaseOrderStatus.RECEIVED || po.getOrderStatus() == PurchaseOrderStatus.CANCELLED) {
             throw new IllegalArgumentException("Cannot cancel a fully received or already cancelled order");
+        }
+
+        // Reverse supplier balance if order was submitted (not DRAFT)
+        if (po.getOrderStatus() != PurchaseOrderStatus.DRAFT) {
+            Supplier supplier = supplierRepository.findByIdAndShopIdAndIsActiveTrue(po.getSupplierId(), shopId)
+                    .orElse(null);
+            if (supplier != null) {
+                supplier.setTotalPurchases(supplier.getTotalPurchases().subtract(po.getTotalAmount()));
+                supplier.setOutstandingBalance(supplier.getTotalPurchases().subtract(supplier.getTotalPaid()));
+                supplierRepository.save(supplier);
+            }
         }
 
         po.setOrderStatus(PurchaseOrderStatus.CANCELLED);
@@ -355,12 +379,29 @@ public class PurchaseOrderService {
                         .build())
                 .toList();
 
+        // Build invoice summaries
+        List<SupplierInvoicePurchaseOrder> invoiceLinks = sipoRepository.findActiveByPurchaseOrderId(po.getId());
+        List<SupplierInvoiceSummaryResponse> invoiceSummaries = invoiceLinks.stream()
+                .map(link -> {
+                    SupplierInvoice inv = link.getSupplierInvoice();
+                    return SupplierInvoiceSummaryResponse.builder()
+                            .id(inv.getId())
+                            .invoiceNumber(inv.getInvoiceNumber())
+                            .invoiceStatus(inv.getInvoiceStatus())
+                            .paymentStatus(inv.getPaymentStatus())
+                            .totalAmount(inv.getTotalAmount())
+                            .amountPaid(inv.getAmountPaid())
+                            .build();
+                })
+                .toList();
+
         return PurchaseOrderResponse.builder()
                 .id(po.getId())
                 .poNumber(po.getPoNumber())
                 .supplierId(po.getSupplierId())
                 .supplierName(supplierName)
                 .orderStatus(po.getOrderStatus())
+                .paymentStatus(po.getPaymentStatus())
                 .orderDate(po.getOrderDate())
                 .expectedDate(po.getExpectedDate())
                 .subtotal(po.getSubtotal())
@@ -370,6 +411,7 @@ public class PurchaseOrderService {
                 .discountValue(po.getDiscountValue())
                 .discountAmount(po.getDiscountAmount())
                 .totalAmount(po.getTotalAmount())
+                .amountPaid(po.getAmountPaid())
                 .referenceNumber(po.getReferenceNumber())
                 .notes(po.getNotes())
                 .orderedBy(po.getOrderedBy())
@@ -379,24 +421,8 @@ public class PurchaseOrderService {
                 .createdAt(po.getCreatedAt())
                 .updatedAt(po.getUpdatedAt())
                 .items(itemResponses)
+                .invoices(invoiceSummaries)
                 .build();
     }
 
-    // ==================== HELPERS ====================
-
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
-
-    private UUID getCurrentUserId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        return principal.getId();
-    }
 }

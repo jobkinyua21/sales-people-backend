@@ -63,6 +63,10 @@ public class GoodsReceivedNoteItem extends Auditable {
     @Builder.Default
     private BigDecimal totalCost = BigDecimal.ZERO;
 
+    @Column(name = "returned_quantity", precision = 12, scale = 3)
+    @Builder.Default
+    private BigDecimal returnedQuantity = BigDecimal.ZERO;
+
     @Column(name = "notes", length = 500)
     private String notes;
 }

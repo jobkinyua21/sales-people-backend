@@ -2,12 +2,11 @@ package com.possystem.supplier;
 
 import com.possystem.common.FetchRequest;
 import com.possystem.common.ListResponse;
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +24,7 @@ public class SupplierService {
 
     @Transactional
     public SupplierResponse save(SupplierRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             return updateSupplier(request, shopId);
@@ -34,7 +33,7 @@ public class SupplierService {
     }
 
     public ListResponse<SupplierResponse> fetch(FetchRequest request) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         if (request.getId() != null) {
             Supplier supplier = supplierRepository.findByIdAndShopIdAndIsActiveTrue(request.getId(), shopId)
@@ -62,7 +61,7 @@ public class SupplierService {
 
     @Transactional
     public void delete(UUID id) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         Supplier supplier = supplierRepository.findByIdAndShopIdAndIsActiveTrue(id, shopId)
                 .orElseThrow(() -> new IllegalArgumentException("Supplier not found"));
         supplier.setIsActive(false);
@@ -72,7 +71,7 @@ public class SupplierService {
 
     @Transactional
     public int bulkDelete(List<UUID> ids) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
         List<Supplier> suppliers = supplierRepository.findAllByIdInAndShopIdAndIsActiveTrue(ids, shopId);
         if (suppliers.isEmpty()) {
             throw new IllegalArgumentException("No suppliers found for the given IDs");
@@ -145,13 +144,4 @@ public class SupplierService {
         return code;
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

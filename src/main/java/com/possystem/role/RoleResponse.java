@@ -22,6 +22,7 @@ public class RoleResponse {
     private String roleCode;
     private String roleName;
     private RoleType roleType;
+    private UUID shopId;
     private String description;
     private Boolean isActive;
     private LocalDateTime createdAt;

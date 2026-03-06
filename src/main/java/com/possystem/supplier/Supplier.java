@@ -4,6 +4,7 @@ import com.possystem.audit.Auditable;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -80,6 +81,18 @@ public class Supplier extends Auditable {
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private SupplierStatus status = SupplierStatus.ACTIVE;
+
+    @Column(name = "total_purchases", nullable = false, precision = 14, scale = 2)
+    @Builder.Default
+    private BigDecimal totalPurchases = BigDecimal.ZERO;
+
+    @Column(name = "total_paid", nullable = false, precision = 14, scale = 2)
+    @Builder.Default
+    private BigDecimal totalPaid = BigDecimal.ZERO;
+
+    @Column(name = "outstanding_balance", nullable = false, precision = 14, scale = 2)
+    @Builder.Default
+    private BigDecimal outstandingBalance = BigDecimal.ZERO;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

@@ -1,13 +1,12 @@
 package com.possystem.inventory;
 
-import com.possystem.security.UserPrincipal;
+import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,7 +41,7 @@ public class ProductExcelService {
     // ==================== TEMPLATE GENERATION ====================
 
     public byte[] generateTemplate() {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             // Sheet 1: Products
@@ -141,7 +140,7 @@ public class ProductExcelService {
 
     @Transactional
     public ProductUploadResponse processUpload(MultipartFile file) {
-        UUID shopId = getCurrentShopId();
+        UUID shopId = SecurityContextUtil.getCurrentShopId();
 
         // Pre-load category map: lowercased name -> UUID
         List<Category> categories = categoryRepository
@@ -334,13 +333,4 @@ public class ProductExcelService {
         return val.equalsIgnoreCase("YES") || val.equalsIgnoreCase("TRUE");
     }
 
-    private UUID getCurrentShopId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        UUID shopId = principal.getShopId();
-        if (shopId == null) {
-            throw new IllegalArgumentException("Shop context is required");
-        }
-        return shopId;
-    }
 }

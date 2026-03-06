@@ -20,7 +20,11 @@ public class CustomerRequest {
 
     private CustomerGender gender;
 
-    private BigDecimal balanceCredit;
+    private Boolean creditEnabled;
+
+    private BigDecimal creditLimit;
+
+    private Integer creditTermsDays;
 
     private String tinNumber;
 
