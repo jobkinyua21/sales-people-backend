@@ -484,3 +484,30 @@ ON CONFLICT (permission_code) DO NOTHING;
 INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
 VALUES (gen_random_uuid(), 'CASH_REGISTER_MANAGE', 'Manage Cash Register', 'CASH_REGISTER', 'MANAGE', 'Open, close register and record cash movements')
 ON CONFLICT (permission_code) DO NOTHING;
+
+-- STOCK_ALERTS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'STOCK_ALERTS_VIEW', 'View Stock Alerts', 'STOCK_ALERTS', 'VIEW', 'View low stock and out of stock alerts')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'STOCK_ALERTS_MANAGE', 'Manage Stock Alerts', 'STOCK_ALERTS', 'MANAGE', 'Acknowledge and resolve stock alerts')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- RECEIPTS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'RECEIPTS_GENERATE', 'Generate Receipts', 'RECEIPTS', 'CREATE', 'Generate and print sales receipts')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- SALES_RETURNS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_RETURNS_VIEW', 'View Sales Returns', 'SALES_RETURNS', 'VIEW', 'View sales return history')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_RETURNS_CREATE', 'Create Sales Returns', 'SALES_RETURNS', 'CREATE', 'Request a sales return')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'SALES_RETURNS_APPROVE', 'Approve Sales Returns', 'SALES_RETURNS', 'MANAGE', 'Approve or reject sales return requests')
+ON CONFLICT (permission_code) DO NOTHING;

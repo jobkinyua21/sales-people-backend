@@ -51,23 +51,15 @@ public class CashRegisterService {
         UUID shopId = SecurityContextUtil.getCurrentShopId();
         UUID userId = SecurityContextUtil.getCurrentUserId();
 
-        CashRegisterSession session = sessionRepository.findByIdAndShopId(request.getSessionId(), shopId)
-                .orElseThrow(() -> new IllegalArgumentException("Register session not found"));
-
-        if (session.getStatus() != RegisterSessionStatus.OPEN) {
-            throw new IllegalArgumentException("Register session is already closed");
-        }
+        CashRegisterSession session = sessionRepository
+                .findByShopIdAndOpenedByAndStatus(shopId, userId, RegisterSessionStatus.OPEN)
+                .orElseThrow(() -> new IllegalArgumentException("You don't have an open register session"));
 
         if (request.getActualClosingBalance().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Closing balance cannot be negative");
         }
 
-        // Expected = opening + cash sales + cash in - cash out - cash refunds
-        BigDecimal expected = session.getOpeningBalance()
-                .add(session.getTotalCashSales())
-                .add(session.getTotalCashIn())
-                .subtract(session.getTotalCashOut())
-                .subtract(session.getTotalCashRefunds());
+        BigDecimal expected = calculateExpectedBalance(session);
 
         session.setExpectedClosingBalance(expected);
         session.setActualClosingBalance(request.getActualClosingBalance());
@@ -111,10 +103,13 @@ public class CashRegisterService {
 
         if (request.getMovementType() == CashMovementType.CASH_IN) {
             session.setTotalCashIn(session.getTotalCashIn().add(request.getAmount()));
-        } else {
+        } else if (request.getMovementType() == CashMovementType.CASH_OUT) {
+            session.setTotalCashOut(session.getTotalCashOut().add(request.getAmount()));
+        } else if (request.getMovementType() == CashMovementType.CASH_DROP) {
             session.setTotalCashOut(session.getTotalCashOut().add(request.getAmount()));
         }
 
+        recalculateExpectedBalance(session);
         CashRegisterSession saved = sessionRepository.save(session);
         return buildResponse(saved);
     }
@@ -158,6 +153,7 @@ public class CashRegisterService {
         sessionRepository.findByShopIdAndOpenedByAndStatus(shopId, userId, RegisterSessionStatus.OPEN)
                 .ifPresent(session -> {
                     session.setTotalCashSales(session.getTotalCashSales().add(cashAmount));
+                    recalculateExpectedBalance(session);
                     sessionRepository.save(session);
                 });
     }
@@ -170,6 +166,7 @@ public class CashRegisterService {
         sessionRepository.findByShopIdAndOpenedByAndStatus(shopId, userId, RegisterSessionStatus.OPEN)
                 .ifPresent(session -> {
                     session.setTotalCashRefunds(session.getTotalCashRefunds().add(refundAmount));
+                    recalculateExpectedBalance(session);
                     sessionRepository.save(session);
                 });
     }
@@ -179,6 +176,20 @@ public class CashRegisterService {
      */
     public boolean hasOpenSession(UUID shopId, UUID userId) {
         return sessionRepository.existsByShopIdAndOpenedByAndStatus(shopId, userId, RegisterSessionStatus.OPEN);
+    }
+
+    // ==================== HELPERS ====================
+
+    private BigDecimal calculateExpectedBalance(CashRegisterSession session) {
+        return session.getOpeningBalance()
+                .add(session.getTotalCashSales())
+                .add(session.getTotalCashIn())
+                .subtract(session.getTotalCashOut())
+                .subtract(session.getTotalCashRefunds());
+    }
+
+    private void recalculateExpectedBalance(CashRegisterSession session) {
+        session.setExpectedClosingBalance(calculateExpectedBalance(session));
     }
 
     // ==================== RESPONSE BUILDING ====================

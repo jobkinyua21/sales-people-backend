@@ -1,6 +1,7 @@
 package com.possystem.inventory;
 
 import com.possystem.common.ListResponse;
+import com.possystem.inventory.stockalert.StockAlertService;
 import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -22,6 +23,7 @@ public class InventoryStockService {
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final StockAlertService stockAlertService;
     private final ModelMapper modelMapper;
 
     @Transactional
@@ -116,6 +118,14 @@ public class InventoryStockService {
         }
 
         InventoryStock saved = inventoryStockRepository.save(stock);
+
+        // Check stock alerts — resolve if restocked, create if reduced
+        if (saved.getCurrentQuantity().compareTo(oldQuantity) > 0) {
+            stockAlertService.checkAndResolveAlert(shopId, saved.getVariantId());
+        } else if (saved.getCurrentQuantity().compareTo(oldQuantity) < 0) {
+            stockAlertService.checkAndCreateAlert(shopId, saved.getVariantId());
+        }
+
         return buildStockResponse(saved);
     }
 

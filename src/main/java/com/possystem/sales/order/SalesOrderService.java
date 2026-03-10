@@ -9,6 +9,7 @@ import com.possystem.inventory.Product;
 import com.possystem.inventory.ProductRepository;
 import com.possystem.inventory.ProductVariant;
 import com.possystem.inventory.ProductVariantRepository;
+import com.possystem.inventory.stockalert.StockAlertService;
 import com.possystem.sales.register.CashRegisterService;
 import com.possystem.security.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class SalesOrderService {
     private final InventoryStockRepository inventoryStockRepository;
     private final CustomerRepository customerRepository;
     private final CashRegisterService cashRegisterService;
+    private final StockAlertService stockAlertService;
     private final ModelMapper modelMapper;
 
     // ==================== CRUD ====================
@@ -159,6 +161,14 @@ public class SalesOrderService {
             throw new IllegalArgumentException("Payments can only be added to PENDING orders");
         }
 
+        // Enforce open register for cash payments
+        if (request.getPaymentMethod() == PaymentMethod.CASH) {
+            UUID currentUserId = SecurityContextUtil.getCurrentUserId();
+            if (!cashRegisterService.hasOpenSession(shopId, currentUserId)) {
+                throw new IllegalArgumentException("You don't have an open register session. Open the cash register before processing cash payments.");
+            }
+        }
+
         SalesPayment payment = SalesPayment.builder()
                 .salesOrder(order)
                 .paymentMethod(request.getPaymentMethod())
@@ -240,10 +250,14 @@ public class SalesOrderService {
     // ==================== CREATE / UPDATE ====================
 
     private SalesOrderResponse createOrder(SalesOrderRequest request, UUID shopId) {
-        // Enforce open register session for the current cashier
         UUID currentUserId = SecurityContextUtil.getCurrentUserId();
-        if (!cashRegisterService.hasOpenSession(shopId, currentUserId)) {
-            throw new IllegalArgumentException("You don't have an open register session. Open the cash register before creating orders.");
+
+        // Only enforce open register if the order includes a cash payment
+        if (request.getPayments() != null && request.getPayments().stream()
+                .anyMatch(p -> p.getPaymentMethod() == PaymentMethod.CASH)) {
+            if (!cashRegisterService.hasOpenSession(shopId, currentUserId)) {
+                throw new IllegalArgumentException("You don't have an open register session. Open the cash register before processing cash payments.");
+            }
         }
 
         SalesOrder order = new SalesOrder();
@@ -505,6 +519,9 @@ public class SalesOrderService {
                 }
                 stock.setCurrentQuantity(newQty);
                 inventoryStockRepository.save(stock);
+
+                // Check for low/out of stock alerts
+                stockAlertService.checkAndCreateAlert(shopId, item.getVariantId());
             }
         }
     }
@@ -520,6 +537,9 @@ public class SalesOrderService {
                         .ifPresent(stock -> {
                             stock.setCurrentQuantity(stock.getCurrentQuantity().add(item.getQuantity()));
                             inventoryStockRepository.save(stock);
+
+                            // Auto-resolve alerts if stock is back above reorder level
+                            stockAlertService.checkAndResolveAlert(shopId, item.getVariantId());
                         });
             }
         }

@@ -38,7 +38,7 @@ public class CashRegisterController {
         return ResponseEntity.ok(ApiResponse.success(response, "Cash movement recorded"));
     }
 
-    @GetMapping("/current")
+    @PostMapping("/current")
     @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('CASH_REGISTER_VIEW') or hasAuthority('CASH_REGISTER_MANAGE')")
     public ResponseEntity<ApiResponse<CashRegisterSessionResponse>> current() {
         CashRegisterSessionResponse response = cashRegisterService.getCurrentSession();
@@ -48,14 +48,14 @@ public class CashRegisterController {
         return ResponseEntity.ok(ApiResponse.success(response, "Current session"));
     }
 
-    @GetMapping("/my-history")
+    @PostMapping("/my-history")
     @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('CASH_REGISTER_VIEW') or hasAuthority('CASH_REGISTER_MANAGE')")
     public ResponseEntity<ApiResponse<List<CashRegisterSessionResponse>>> myHistory() {
         List<CashRegisterSessionResponse> sessions = cashRegisterService.getMySessionHistory();
         return ResponseEntity.ok(ApiResponse.success(sessions, "My session history"));
     }
 
-    @GetMapping("/history")
+    @PostMapping("/history")
     @PreAuthorize("hasAnyRole('SYSTEM_OWNER', 'TENANT_ADMIN') or hasAuthority('CASH_REGISTER_VIEW')")
     public ResponseEntity<ApiResponse<List<CashRegisterSessionResponse>>> allHistory() {
         List<CashRegisterSessionResponse> sessions = cashRegisterService.getAllSessionHistory();
