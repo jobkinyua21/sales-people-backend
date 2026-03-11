@@ -16,6 +16,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.possystem.common.ApiResponse;
+import com.possystem.common.ErrorCode;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 @Configuration
 @EnableWebSecurity
@@ -49,6 +54,22 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            ApiResponse<Void> body = ApiResponse.error(
+                                    ErrorCode.EXPIRED_TOKEN, HttpStatus.FORBIDDEN.value());
+                            new ObjectMapper().writeValue(response.getOutputStream(), body);
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            ApiResponse<Void> body = ApiResponse.error(
+                                    ErrorCode.ACCESS_DENIED, HttpStatus.UNAUTHORIZED.value());
+                            new ObjectMapper().writeValue(response.getOutputStream(), body);
+                        })
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -58,8 +58,8 @@ public class ErrorCodeController {
 
     private int getHttpStatus(ErrorCode errorCode) {
         String code = errorCode.getCode();
-        if (code.startsWith("AUTH_")) return 401;
-        if (code.startsWith("AUTHZ_")) return 403;
+        if (code.startsWith("AUTH_")) return 403;
+        if (code.startsWith("AUTHZ_")) return 401;
         if (code.startsWith("VAL_")) return 400;
         if (code.startsWith("CONF_")) return 409;
         if (code.startsWith("NF_")) return 404;

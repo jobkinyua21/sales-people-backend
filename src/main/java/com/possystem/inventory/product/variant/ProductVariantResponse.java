@@ -35,6 +35,4 @@ public class ProductVariantResponse {
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    private InventoryStockResponse stock;
 }

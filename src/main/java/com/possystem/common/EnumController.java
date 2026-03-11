@@ -13,6 +13,12 @@ import com.possystem.purchasing.enums.PurchaseOrderStatus;
 import com.possystem.purchasing.enums.PurchaseReturnStatus;
 import com.possystem.purchasing.enums.ReturnReason;
 import com.possystem.purchasing.enums.SupplierInvoiceStatus;
+import com.possystem.kitchen.recipe.PrepStation;
+import com.possystem.kitchen.recipe.ProductionType;
+import com.possystem.kitchen.recipe.RecipeStatus;
+import com.possystem.kitchen.production.ProductionStatus;
+import com.possystem.kitchen.kot.KotStatus;
+import com.possystem.kitchen.kot.KotItemStatus;
 import com.possystem.expense.enums.ExpenseCategoryStatus;
 import com.possystem.expense.enums.ExpenseStatus;
 import com.possystem.supplier.SupplierStatus;
@@ -71,6 +77,12 @@ public class EnumController {
         enums.put("supplierInvoiceStatus", enumValues(SupplierInvoiceStatus.class));
         enums.put("expenseCategoryStatus", enumValues(ExpenseCategoryStatus.class));
         enums.put("expenseStatus", enumValues(ExpenseStatus.class));
+        enums.put("recipeStatus", enumValues(RecipeStatus.class));
+        enums.put("prepStation", enumValues(PrepStation.class));
+        enums.put("productionType", enumValues(ProductionType.class));
+        enums.put("productionStatus", enumValues(ProductionStatus.class));
+        enums.put("kotStatus", enumValues(KotStatus.class));
+        enums.put("kotItemStatus", enumValues(KotItemStatus.class));
         return ResponseEntity.ok(enums);
     }
 

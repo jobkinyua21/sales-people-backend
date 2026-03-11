@@ -25,6 +25,8 @@ public class SalesOrderRequest {
 
     private String notes;
 
+    private String tableNumber;
+
     @NotEmpty(message = "Order must have at least one item")
     @Valid
     private List<SalesOrderItemRequest> items;

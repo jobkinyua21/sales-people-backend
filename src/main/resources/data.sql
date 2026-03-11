@@ -511,3 +511,47 @@ ON CONFLICT (permission_code) DO NOTHING;
 INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
 VALUES (gen_random_uuid(), 'SALES_RETURNS_APPROVE', 'Approve Sales Returns', 'SALES_RETURNS', 'MANAGE', 'Approve or reject sales return requests')
 ON CONFLICT (permission_code) DO NOTHING;
+
+-- RECIPES permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'RECIPES_VIEW', 'View Recipes', 'RECIPES', 'VIEW', 'View recipes and bill of materials')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'RECIPES_CREATE', 'Create Recipes', 'RECIPES', 'CREATE', 'Create new recipes with ingredients')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'RECIPES_EDIT', 'Edit Recipes', 'RECIPES', 'EDIT', 'Edit existing recipes')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'RECIPES_DELETE', 'Delete Recipes', 'RECIPES', 'DELETE', 'Delete recipes')
+ON CONFLICT (permission_code) DO NOTHING;
+
+
+-- KITCHEN_ORDERS permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'KITCHEN_ORDERS_VIEW', 'View Kitchen Orders', 'KITCHEN_ORDERS', 'VIEW', 'View kitchen order tickets and display')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'KITCHEN_ORDERS_CREATE', 'Create Kitchen Orders', 'KITCHEN_ORDERS', 'CREATE', 'Send orders to kitchen')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'KITCHEN_ORDERS_MANAGE', 'Manage Kitchen Orders', 'KITCHEN_ORDERS', 'MANAGE', 'Accept, prepare, and manage kitchen order items')
+ON CONFLICT (permission_code) DO NOTHING;
+
+-- PRODUCTION permissions
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PRODUCTION_VIEW', 'View Production Orders', 'PRODUCTION', 'VIEW', 'View production orders and history')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PRODUCTION_CREATE', 'Create Production Orders', 'PRODUCTION', 'CREATE', 'Create batch production orders')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO pos_core.permission (id, permission_code, permission_name, module, action, description)
+VALUES (gen_random_uuid(), 'PRODUCTION_MANAGE', 'Manage Production Orders', 'PRODUCTION', 'MANAGE', 'Start, complete, and cancel production orders')
+ON CONFLICT (permission_code) DO NOTHING;

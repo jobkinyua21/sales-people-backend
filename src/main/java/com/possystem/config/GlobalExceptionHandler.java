@@ -25,45 +25,45 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ==================== 401 UNAUTHORIZED - Authentication Errors ====================
-    // Use these when the user's identity cannot be verified (invalid/missing/expired token)
+    // ==================== 403 FORBIDDEN - Token/Authentication Errors ====================
+    // Use these when the token is invalid/expired — frontend should prompt login
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ErrorCode.INVALID_CREDENTIALS, ex.getMessage(), HttpStatus.UNAUTHORIZED.value()));
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ErrorCode.INVALID_CREDENTIALS, ex.getMessage(), HttpStatus.FORBIDDEN.value()));
     }
 
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<ApiResponse<Void>> handleExpiredJwt(ExpiredJwtException ex) {
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ErrorCode.EXPIRED_TOKEN, HttpStatus.UNAUTHORIZED.value()));
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ErrorCode.EXPIRED_TOKEN, HttpStatus.FORBIDDEN.value()));
     }
 
     @ExceptionHandler(MalformedJwtException.class)
     public ResponseEntity<ApiResponse<Void>> handleMalformedJwt(MalformedJwtException ex) {
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ErrorCode.INVALID_TOKEN, HttpStatus.UNAUTHORIZED.value()));
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ErrorCode.INVALID_TOKEN, HttpStatus.FORBIDDEN.value()));
     }
 
     @ExceptionHandler(SignatureException.class)
     public ResponseEntity<ApiResponse<Void>> handleSignatureException(SignatureException ex) {
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ErrorCode.INVALID_TOKEN, HttpStatus.UNAUTHORIZED.value()));
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ErrorCode.INVALID_TOKEN, HttpStatus.FORBIDDEN.value()));
     }
 
-    // ==================== 403 FORBIDDEN - Authorization Errors ====================
-    // Use these when user is authenticated but lacks permission or account has restrictions
+    // ==================== 401 UNAUTHORIZED - Permission Errors ====================
+    // Use these when user is authenticated but lacks permission
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(ErrorCode.ACCESS_DENIED, HttpStatus.FORBIDDEN.value()));
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ErrorCode.ACCESS_DENIED, HttpStatus.UNAUTHORIZED.value()));
     }
 
     @ExceptionHandler(DisabledException.class)

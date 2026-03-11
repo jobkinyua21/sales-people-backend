@@ -92,6 +92,9 @@ public class SalesOrder extends Auditable {
     @Column(name = "notes", length = 1000)
     private String notes;
 
+    @Column(name = "table_number", length = 20)
+    private String tableNumber;
+
     @Column(name = "served_by")
     private UUID servedBy;
 

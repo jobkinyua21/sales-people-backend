@@ -161,6 +161,10 @@ public class SalesOrderService {
             throw new IllegalArgumentException("Payments can only be added to PENDING orders");
         }
 
+        if (order.getPaymentStatus() == PaymentStatus.PAID || order.getPaymentStatus() == PaymentStatus.OVERPAID) {
+            throw new IllegalArgumentException("Order is already fully paid");
+        }
+
         // Enforce open register for cash payments
         if (request.getPaymentMethod() == PaymentMethod.CASH) {
             UUID currentUserId = SecurityContextUtil.getCurrentUserId();
@@ -269,6 +273,7 @@ public class SalesOrderService {
         order.setDiscountValue(request.getDiscountValue());
         order.setReferenceNumber(request.getReferenceNumber());
         order.setNotes(request.getNotes());
+        order.setTableNumber(request.getTableNumber());
         order.setServedBy(SecurityContextUtil.getCurrentUserId());
         order.setOrderStatus(OrderStatus.PENDING);
         order.setPaymentStatus(PaymentStatus.UNPAID);
@@ -325,6 +330,7 @@ public class SalesOrderService {
         order.setDiscountValue(request.getDiscountValue());
         order.setReferenceNumber(request.getReferenceNumber());
         order.setNotes(request.getNotes());
+        order.setTableNumber(request.getTableNumber());
 
         // Rebuild items
         order.getItems().clear();

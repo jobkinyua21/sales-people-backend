@@ -36,6 +36,7 @@ public class SalesOrderResponse {
     private BigDecimal balanceDue;
     private String referenceNumber;
     private String notes;
+    private String tableNumber;
     private UUID servedBy;
     private LocalDateTime completedAt;
     private LocalDateTime cancelledAt;

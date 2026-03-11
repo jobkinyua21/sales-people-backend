@@ -11,21 +11,10 @@ import java.util.UUID;
 public class ProductVariantService {
 
     private final ProductVariantRepository productVariantRepository;
-    private final InventoryStockRepository inventoryStockRepository;
-    private final InventoryStockService inventoryStockService;
     private final ModelMapper modelMapper;
 
     ProductVariantResponse buildVariantResponse(ProductVariant variant) {
-        ProductVariantResponse response = modelMapper.map(variant, ProductVariantResponse.class);
-
-        // Resolve stock (computed field)
-        InventoryStockResponse stockResponse = inventoryStockRepository
-                .findByVariantIdAndShopIdAndIsActiveTrue(variant.getId(), variant.getShopId())
-                .map(inventoryStockService::buildStockResponse)
-                .orElse(null);
-        response.setStock(stockResponse);
-
-        return response;
+        return modelMapper.map(variant, ProductVariantResponse.class);
     }
 
     String generateSku(UUID shopId) {
