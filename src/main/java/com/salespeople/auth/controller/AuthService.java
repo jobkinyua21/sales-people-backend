@@ -89,6 +89,7 @@ public class AuthService {
                 user.getUserType().name(), ipAddress
         );
 
+
         return LoginResponse.builder()
                 .otpRequired(true)
                 .usrId(user.getUsrId())
