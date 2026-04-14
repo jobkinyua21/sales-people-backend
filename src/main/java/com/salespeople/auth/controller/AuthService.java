@@ -68,6 +68,8 @@ public class AuthService {
 
         validateUserStatus(user.getUsrStatus(), user.getIsActive());
 
+
+
         // Validate password
         if (!passwordEncoder.matches(request.getPassword(), user.getUsrPassword())) {
             loginAttemptService.incrementFailedAttempts(user);
