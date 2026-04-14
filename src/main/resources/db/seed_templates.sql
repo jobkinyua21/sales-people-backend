@@ -1,5 +1,5 @@
 -- Login OTP Template
-INSERT INTO pos_core.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
+INSERT INTO sales_people.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
 VALUES (
     'Login OTP',
     'OTP verification email sent during login',
@@ -65,7 +65,7 @@ VALUES (
 ON CONFLICT (mst_type) DO NOTHING;
 
 -- Password Reset Template
-INSERT INTO pos_core.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
+INSERT INTO sales_people.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
 VALUES (
     'Password Reset',
     'Password reset email with token/link',
@@ -130,7 +130,7 @@ VALUES (
 ON CONFLICT (mst_type) DO NOTHING;
 
 -- Email Verification Template
-INSERT INTO pos_core.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
+INSERT INTO sales_people.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
 VALUES (
     'Email Verification',
     'Email verification for new account registration',
@@ -195,7 +195,7 @@ VALUES (
 ON CONFLICT (mst_type) DO NOTHING;
 
 -- Welcome Template
-INSERT INTO pos_core.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
+INSERT INTO sales_people.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
 VALUES (
     'Welcome',
     'Welcome email sent after account activation',
