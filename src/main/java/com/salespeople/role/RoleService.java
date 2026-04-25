@@ -2,13 +2,10 @@ package com.salespeople.role;
 
 import com.salespeople.auth.user.UserRepository;
 import com.salespeople.common.ListResponse;
-import com.salespeople.common.UserType;
 import com.salespeople.permission.Permission;
 import com.salespeople.permission.PermissionAction;
 import com.salespeople.permission.PermissionRepository;
 import com.salespeople.permission.PermissionResponse;
-import com.salespeople.security.SecurityContextUtil;
-import com.salespeople.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -65,10 +62,7 @@ public class RoleService {
                 .orElseThrow(() -> new IllegalArgumentException("Role not found"));
 
         if (role.getRoleType() == RoleType.SYSTEM) {
-            UserPrincipal principal = SecurityContextUtil.getCurrentPrincipal();
-            if (principal.getUserType() != UserType.ADMIN) {
-                throw new IllegalArgumentException("Only admin can modify default roles");
-            }
+            throw new IllegalArgumentException("Only admin can modify default roles");
         }
 
         if (!role.getRoleName().equalsIgnoreCase(request.getRoleName())) {

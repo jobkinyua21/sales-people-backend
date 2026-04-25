@@ -23,7 +23,7 @@ public class LoginAttempt {
     private UUID id;
 
     @Column(name = "user_id")
-    private UUID usrId;
+    private Long usrId;
 
     @Column(name = "username")
     private String username;

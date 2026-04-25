@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -43,15 +42,13 @@ public class OtpService {
     }
 
     @Transactional
-    public void createAndSendOtp(UUID usrId, String email, String firstName, String userType, String ipAddress) {
-        // Rate limit: max N OTP requests within the configured window
+    public void createAndSendOtp(Long usrId, String email, String firstName, String userType, String ipAddress) {
         LocalDateTime rateLimitWindow = LocalDateTime.now().minusMinutes(otpRateLimitMinutes);
         long recentOtpCount = otpVerificationRepository.countByUsrIdAndCreatedAtAfter(usrId, rateLimitWindow);
         if (recentOtpCount >= otpMaxRequests) {
             throw new IllegalStateException(ErrorCode.OTP_RATE_LIMIT.getDefaultMessage());
         }
 
-        // Invalidate any existing unused OTPs for this email
         otpVerificationRepository.deleteByEmailAndIsUsedFalse(email);
 
         String otpCode = generateOtp();
@@ -69,12 +66,10 @@ public class OtpService {
 
         log.info("OTP code for {} (user {}): {}", email, usrId, otpCode);
 
-        // Send OTP via email template
         AlertDTO alert = AlertDTO.builder()
                 .email(email)
                 .firstName(firstName)
                 .templateName("LOGIN_OTP")
-                .usrId(usrId)
                 .placeholders(Map.of(
                         "#{OTP_CODE}", otpCode,
                         "#{EXPIRY_MINUTES}", String.valueOf(otpExpiryMinutes)
@@ -86,12 +81,10 @@ public class OtpService {
         } catch (Exception e) {
             log.error("Failed to send OTP email to {}: {}", email, e.getMessage());
         }
-
-        log.info("OTP created and sent to {} for user {}", email, usrId);
     }
 
     @Transactional
-    public OtpVerification verifyOtpByUserId(UUID usrId, String otpCode) {
+    public OtpVerification verifyOtpByUserId(Long usrId, String otpCode) {
         var matched = otpVerificationRepository
                 .findByUsrIdAndOtpCodeAndIsUsedFalseAndExpiresAtAfter(usrId, otpCode, LocalDateTime.now());
 
@@ -103,7 +96,6 @@ public class OtpService {
             return otp;
         }
 
-        // Wrong OTP — find the active OTP and increment attempt count
         var activeOtp = otpVerificationRepository
                 .findByUsrIdAndIsUsedFalseAndExpiresAtAfter(usrId, LocalDateTime.now());
 

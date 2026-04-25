@@ -2,8 +2,6 @@ package com.salespeople.security;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.UUID;
-
 public final class SecurityContextUtil {
 
     private SecurityContextUtil() {
@@ -17,7 +15,7 @@ public final class SecurityContextUtil {
         return (UserPrincipal) authentication.getPrincipal();
     }
 
-    public static UUID getCurrentUserId() {
+    public static Long getCurrentUserId() {
         return getCurrentPrincipal().getId();
     }
 }

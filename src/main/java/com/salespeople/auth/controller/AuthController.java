@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -139,7 +138,7 @@ public class AuthController {
         String resetToken = authService.verifyForgotPasswordOtp(request.getUsrId(), request.getUsrSecret());
         Map<String, String> data = Map.of(
                 "resetToken", resetToken,
-                "usrId", request.getUsrId().toString()
+                "usrId", String.valueOf(request.getUsrId())
         );
         return ResponseEntity.ok(ApiResponse.success(data, "OTP verified successfully"));
     }
@@ -150,7 +149,7 @@ public class AuthController {
     )
     @PostMapping("/resend-otp/{usrId}")
     public ResponseEntity<ApiResponse<Void>> resendOtp(
-            @PathVariable UUID usrId,
+            @PathVariable Long usrId,
             HttpServletRequest httpRequest) {
         authService.resendOtp(usrId, httpRequest);
         return ResponseEntity.ok(ApiResponse.success(null, "OTP has been resent to your email"));
@@ -170,25 +169,4 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(null, "Password updated successfully. You can now login with your new password."));
     }
 
-    // ==================== EMAIL VERIFICATION ====================
-
-    @Operation(
-            summary = "Verify Email",
-            description = "Verify email address using the verification token sent via email."
-    )
-    @PostMapping("/verify-email")
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
-        authService.verifyEmail(request);
-        return ResponseEntity.ok(ApiResponse.success(null, "Email verified successfully."));
-    }
-
-    @Operation(
-            summary = "Resend Verification Email",
-            description = "Resend the email verification link to the specified email address."
-    )
-    @PostMapping("/resend-verification")
-    public ResponseEntity<ApiResponse<Void>> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
-        authService.resendVerification(request);
-        return ResponseEntity.ok(ApiResponse.success(null, "Verification email has been resent."));
-    }
 }

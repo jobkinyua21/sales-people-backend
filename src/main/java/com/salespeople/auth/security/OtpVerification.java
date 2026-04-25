@@ -20,7 +20,7 @@ public class OtpVerification {
     private UUID id;
 
     @Column(name = "usr_id", nullable = false)
-    private UUID usrId;
+    private Long usrId;
 
     @Column(name = "user_type", nullable = false)
     private String userType;

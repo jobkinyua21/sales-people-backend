@@ -16,22 +16,12 @@ import java.util.UUID;
 public class AuthResponse {
 
     private String accessToken;
-
     private String refreshToken;
-
     private String tokenType;
-
     private Long expiresIn;
-
-    private String userType;
-
-    private UUID usrId;
-
+    private Long usrId;
     private String email;
-
     private String fullName;
-
+    private Integer staffNumber;
     private UUID sessionId;
-
-    private Boolean mustChangePassword;
 }

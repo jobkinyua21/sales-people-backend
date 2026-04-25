@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,13 +13,8 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RegisterResponse {
 
-    private UUID usrId;
-
+    private Long usrId;
     private String email;
-
     private String fullName;
-
-    private String userType;
-
-    private String status;
+    private Integer staffNumber;
 }

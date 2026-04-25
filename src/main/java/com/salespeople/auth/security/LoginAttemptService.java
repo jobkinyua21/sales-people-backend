@@ -1,21 +1,20 @@
 package com.salespeople.auth.security;
 
-import com.salespeople.auth.user.User;
-import com.salespeople.auth.user.UserRepository;
+import com.salespeople.auth.user.UserTb;
+import com.salespeople.auth.user.UserTbRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class LoginAttemptService {
 
     private final LoginAttemptRepository loginAttemptRepository;
-    private final UserRepository userRepository;
+    private final UserTbRepository userTbRepository;
 
     @Value("${security.max-failed-attempts:5}")
     private int maxFailedAttempts;
@@ -24,12 +23,11 @@ public class LoginAttemptService {
     private int lockDurationMinutes;
 
     @Transactional
-    public void recordLoginAttempt(UUID usrId, String username, String email,
+    public void recordLoginAttempt(Long usrId, String email,
                                    boolean success, String ipAddress, String userAgent,
                                    String failureReason) {
         LoginAttempt attempt = LoginAttempt.builder()
                 .usrId(usrId)
-                .username(username)
                 .email(email)
                 .success(success)
                 .ipAddress(ipAddress)
@@ -42,16 +40,13 @@ public class LoginAttemptService {
     }
 
     @Transactional
-    public boolean isAccountLocked(User user) {
-        if (user.getLockedUntil() == null) {
-            return false;
-        }
+    public boolean isAccountLocked(UserTb user) {
+        if (user.getLockedUntil() == null) return false;
 
-        // Lock has expired — auto-unlock
         if (user.getLockedUntil().isBefore(LocalDateTime.now())) {
             user.setFailedLoginAttempts(0);
             user.setLockedUntil(null);
-            userRepository.save(user);
+            userTbRepository.save(user);
             return false;
         }
 
@@ -59,14 +54,14 @@ public class LoginAttemptService {
     }
 
     @Transactional
-    public void resetFailedAttempts(User user) {
+    public void resetFailedAttempts(UserTb user) {
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
-        userRepository.save(user);
+        userTbRepository.save(user);
     }
 
     @Transactional
-    public void incrementFailedAttempts(User user) {
+    public void incrementFailedAttempts(UserTb user) {
         int current = user.getFailedLoginAttempts() != null ? user.getFailedLoginAttempts() : 0;
         int attempts = current + 1;
         user.setFailedLoginAttempts(attempts);
@@ -75,6 +70,6 @@ public class LoginAttemptService {
             user.setLockedUntil(LocalDateTime.now().plusMinutes(lockDurationMinutes));
         }
 
-        userRepository.save(user);
+        userTbRepository.save(user);
     }
 }

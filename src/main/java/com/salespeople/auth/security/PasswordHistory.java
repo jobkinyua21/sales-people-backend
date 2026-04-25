@@ -1,4 +1,3 @@
-
 package com.salespeople.auth.security;
 
 import jakarta.persistence.*;
@@ -24,7 +23,7 @@ public class PasswordHistory {
     private UUID id;
 
     @Column(name = "user_id", nullable = false)
-    private UUID usrId;
+    private Long usrId;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;

@@ -1,6 +1,5 @@
 package com.salespeople.security;
 
-import com.salespeople.common.UserType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -13,7 +12,6 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -32,14 +30,9 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public UserType extractUserType(String token) {
-        String type = extractClaim(token, claims -> claims.get("userType", String.class));
-        return type != null ? UserType.valueOf(type) : null;
-    }
-
-    public UUID extractUserId(String token) {
+    public Long extractUserId(String token) {
         String id = extractClaim(token, claims -> claims.get("usrId", String.class));
-        return id != null ? UUID.fromString(id) : null;
+        return id != null ? Long.parseLong(id) : null;
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -51,15 +44,11 @@ public class JwtService {
         Map<String, Object> extraClaims = new HashMap<>();
 
         if (userDetails instanceof UserPrincipal principal) {
-            extraClaims.put("userType", principal.getUserType().name());
-            extraClaims.put("usrId", principal.getId().toString());
+            extraClaims.put("usrId", String.valueOf(principal.getId()));
             extraClaims.put("email", principal.getEmail());
-            extraClaims.put("phoneNumber", principal.getPhoneNumber());
             extraClaims.put("firstName", principal.getFirstName());
             extraClaims.put("lastName", principal.getLastName());
-            if (principal.getRoleId() != null) {
-                extraClaims.put("roleId", principal.getRoleId().toString());
-            }
+            extraClaims.put("staffNumber", principal.getStaffNumber());
         }
 
         return buildToken(extraClaims, userDetails, jwtExpiration);
@@ -69,8 +58,7 @@ public class JwtService {
         Map<String, Object> extraClaims = new HashMap<>();
 
         if (userDetails instanceof UserPrincipal principal) {
-            extraClaims.put("userType", principal.getUserType().name());
-            extraClaims.put("usrId", principal.getId().toString());
+            extraClaims.put("usrId", String.valueOf(principal.getId()));
         }
 
         return buildToken(extraClaims, userDetails, refreshExpiration);

@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.salespeople.common.ApiResponse;
 import com.salespeople.common.ErrorCode;
 import org.springframework.http.HttpStatus;
@@ -59,14 +61,14 @@ public class SecurityConfig {
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                             ApiResponse<Void> body = ApiResponse.error(
                                     ErrorCode.EXPIRED_TOKEN, HttpStatus.FORBIDDEN.value());
-                            new ObjectMapper().writeValue(response.getOutputStream(), body);
+                            jsonMapper().writeValue(response.getOutputStream(), body);
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                             ApiResponse<Void> body = ApiResponse.error(
                                     ErrorCode.ACCESS_DENIED, HttpStatus.UNAUTHORIZED.value());
-                            new ObjectMapper().writeValue(response.getOutputStream(), body);
+                            jsonMapper().writeValue(response.getOutputStream(), body);
                         })
                 )
                 .authenticationProvider(authenticationProvider())
@@ -91,5 +93,11 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    private ObjectMapper jsonMapper() {
+        return new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 }

@@ -23,7 +23,7 @@ public class UserSession {
     private UUID id;
 
     @Column(name = "user_id", nullable = false)
-    private UUID usrId;
+    private Long usrId;
 
     @Column(name = "session_token", unique = true, nullable = false, columnDefinition = "TEXT")
     private String sessionToken;

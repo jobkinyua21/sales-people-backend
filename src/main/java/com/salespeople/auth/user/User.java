@@ -106,6 +106,9 @@ public class User extends Auditable {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "staff_number", unique = true)
+    private Integer staffNumber;
+
     @Transient
     public String getFullName() {
         return (usrFirstName != null ? usrFirstName + " " : "") +

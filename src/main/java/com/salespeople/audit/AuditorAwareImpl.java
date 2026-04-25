@@ -22,7 +22,9 @@ public class AuditorAwareImpl implements AuditorAware<UUID> {
 
         Object principal = authentication.getPrincipal();
         if (principal instanceof UserPrincipal userPrincipal) {
-            return Optional.of(userPrincipal.getId());
+            // Derive a stable UUID from the Long user ID so auditing infrastructure stays intact
+            return Optional.of(UUID.nameUUIDFromBytes(
+                    String.valueOf(userPrincipal.getId()).getBytes()));
         }
 
         return Optional.empty();

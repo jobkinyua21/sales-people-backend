@@ -23,7 +23,7 @@ public class PasswordResetToken {
     private UUID id;
 
     @Column(name = "user_id", nullable = false)
-    private UUID usrId;
+    private Long usrId;
 
     @Column(name = "token", unique = true, nullable = false)
     private String token;

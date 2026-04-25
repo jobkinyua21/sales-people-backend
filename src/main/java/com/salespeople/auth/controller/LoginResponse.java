@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,8 +14,6 @@ import java.util.UUID;
 public class LoginResponse {
 
     private boolean otpRequired;
-
-    private UUID usrId;
-
+    private Long usrId;
     private String email;
 }

@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,11 +16,9 @@ public interface UserSessionRepository extends JpaRepository<UserSession, UUID> 
 
     Optional<UserSession> findByRefreshToken(String refreshToken);
 
-    List<UserSession> findByUsrIdAndExpiresAtAfter(UUID usrId, LocalDateTime now);
-
     @Modifying
     @Query("DELETE FROM UserSession s WHERE s.usrId = :usrId")
-    void deleteAllByUsrId(UUID usrId);
+    void deleteAllByUsrId(Long usrId);
 
     @Modifying
     @Query("DELETE FROM UserSession s WHERE s.expiresAt < :now")

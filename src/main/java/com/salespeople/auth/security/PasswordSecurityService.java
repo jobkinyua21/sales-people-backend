@@ -1,7 +1,5 @@
 package com.salespeople.auth.security;
 
-import com.salespeople.auth.user.User;
-import com.salespeople.auth.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,7 +16,6 @@ public class PasswordSecurityService {
 
     private final PasswordHistoryRepository passwordHistoryRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${security.password-history-count:5}")
@@ -27,11 +24,8 @@ public class PasswordSecurityService {
     @Value("${security.password-reset-expiry-minutes:60}")
     private int resetExpiryMinutes;
 
-    @Value("${security.password-expiry-days:90}")
-    private int passwordExpiryDays;
-
     @Transactional
-    public void savePasswordHistory(UUID usrId, String passwordHash) {
+    public void savePasswordHistory(Long usrId, String passwordHash) {
         PasswordHistory history = PasswordHistory.builder()
                 .usrId(usrId)
                 .passwordHash(passwordHash)
@@ -41,7 +35,7 @@ public class PasswordSecurityService {
         passwordHistoryRepository.save(history);
     }
 
-    public boolean isPasswordReused(UUID usrId, String rawPassword) {
+    public boolean isPasswordReused(Long usrId, String rawPassword) {
         List<PasswordHistory> histories = passwordHistoryRepository
                 .findByUsrIdOrderByCreatedAtDesc(usrId);
 
@@ -56,14 +50,8 @@ public class PasswordSecurityService {
         return false;
     }
 
-    public boolean isPasswordExpired(User user) {
-        if (user.getPasswordExpiresAt() == null) return false;
-        return user.getPasswordExpiresAt().isBefore(LocalDateTime.now());
-    }
-
     @Transactional
-    public PasswordResetToken generatePasswordResetToken(UUID usrId, String ipAddress, String userAgent) {
-        // Invalidate any existing unused tokens for this user
+    public PasswordResetToken generatePasswordResetToken(Long usrId, String ipAddress, String userAgent) {
         passwordResetTokenRepository.deleteByUsrIdAndIsUsedFalse(usrId);
 
         String token = UUID.randomUUID().toString();
@@ -81,37 +69,5 @@ public class PasswordSecurityService {
                 .build();
 
         return passwordResetTokenRepository.save(resetToken);
-    }
-
-    public PasswordResetToken validateResetToken(String token) {
-        return passwordResetTokenRepository
-                .findByTokenAndIsUsedFalseAndExpiresAtAfter(token, LocalDateTime.now())
-                .orElse(null);
-    }
-
-    @Transactional
-    public void resetPassword(String token, String newPassword) {
-        PasswordResetToken resetToken = validateResetToken(token);
-        if (resetToken == null) {
-            throw new IllegalArgumentException("Invalid or expired password reset token");
-        }
-
-        User user = userRepository.findById(resetToken.getUsrId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        // Update password
-        user.setUsrPassword(passwordEncoder.encode(newPassword));
-        user.setPasswordVersion(user.getPasswordVersion() + 1);
-        user.setPasswordChangedAt(LocalDateTime.now());
-        user.setPasswordExpiresAt(LocalDateTime.now().plusDays(passwordExpiryDays));
-        user.setMustChangePassword(false);
-        user.setFailedLoginAttempts(0);
-        user.setLockedUntil(null);
-        userRepository.save(user);
-
-        // Mark token as used
-        resetToken.setIsUsed(true);
-        resetToken.setUsedAt(LocalDateTime.now());
-        passwordResetTokenRepository.save(resetToken);
     }
 }

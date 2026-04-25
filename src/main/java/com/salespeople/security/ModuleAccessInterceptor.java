@@ -1,6 +1,5 @@
 package com.salespeople.security;
 
-import com.salespeople.common.UserType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,16 +29,10 @@ public class ModuleAccessInterceptor implements HandlerInterceptor {
         }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal)) {
             return true;
         }
 
-        // Admin bypasses module checks
-        if (principal.getUserType() == UserType.ADMIN) {
-            return true;
-        }
-
-        // For now, allow all authenticated users - module access can be extended later
         return true;
     }
 }

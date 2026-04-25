@@ -1,62 +1,37 @@
 package com.salespeople.security;
 
-import com.salespeople.common.UserType;
-import com.salespeople.auth.user.User;
-import com.salespeople.common.UserStatus;
+import com.salespeople.auth.user.UserTb;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 public class UserPrincipal implements UserDetails {
 
-    private final UUID id;
-    private final UUID roleId;
+    private final Long id;
     private final String email;
-    private final String phoneNumber;
     private final String password;
     private final String firstName;
     private final String lastName;
-    private final UserStatus status;
-    private final UserType userType;
-    private final LocalDateTime lockedUntil;
-    private final LocalDateTime passwordExpiresAt;
+    private final Integer staffNumber;
     private final Set<GrantedAuthority> authorities;
+    private final boolean deleted;
 
-    public UserPrincipal(User user) {
-        this(user, List.of());
-    }
-
-    public UserPrincipal(User user, List<String> permissionCodes) {
-        this.id = user.getUsrId();
-        this.roleId = user.getRoleId();
-        this.email = user.getUsrEmail();
-        this.phoneNumber = user.getUsrPhoneNumber();
-        this.password = user.getUsrPassword();
-        this.firstName = user.getUsrFirstName();
-        this.lastName = user.getUsrLastName();
-        this.status = user.getUsrStatus();
-        this.userType = user.getUserType() != null ? user.getUserType() : UserType.SALES_PERSON;
-        this.lockedUntil = user.getLockedUntil();
-        this.passwordExpiresAt = user.getPasswordExpiresAt();
-        this.authorities = buildAuthorities(user, permissionCodes);
-    }
-
-    private Set<GrantedAuthority> buildAuthorities(User user, List<String> permissionCodes) {
-        Set<GrantedAuthority> authorities = new HashSet<>();
-
-        UserType type = user.getUserType() != null ? user.getUserType() : UserType.SALES_PERSON;
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + type.name()));
-
-        for (String code : permissionCodes) {
-            authorities.add(new SimpleGrantedAuthority(code));
-        }
-
-        return authorities;
+    public UserPrincipal(UserTb user) {
+        this.id = user.getUserId();
+        this.email = user.getUserEmail();
+        this.password = user.getPassword();
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
+        this.staffNumber = user.getStaffNumber();
+        this.deleted = Boolean.TRUE.equals(user.getDeleted()) || Boolean.TRUE.equals(user.getSoftDelete());
+        this.authorities = new HashSet<>();
+        this.authorities.add(new SimpleGrantedAuthority("ROLE_SALES_PERSON"));
     }
 
     @Override
@@ -71,7 +46,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email != null && !email.isEmpty() ? email : phoneNumber;
+        return email;
     }
 
     @Override
@@ -81,18 +56,17 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        if (status == UserStatus.SUSPENDED) return false;
-        return lockedUntil == null || lockedUntil.isBefore(LocalDateTime.now());
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return passwordExpiresAt == null || passwordExpiresAt.isAfter(LocalDateTime.now());
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return status == UserStatus.ACTIVE;
+        return !deleted;
     }
 
     public String getFullName() {

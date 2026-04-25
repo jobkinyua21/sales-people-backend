@@ -7,15 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class VerifyOtpRequest {
 
     @NotNull(message = "User ID is required")
-    private UUID usrId;
+    private Long usrId;
 
     @NotBlank(message = "OTP code is required")
     @Size(min = 4, max = 4, message = "OTP must be 4 digits")

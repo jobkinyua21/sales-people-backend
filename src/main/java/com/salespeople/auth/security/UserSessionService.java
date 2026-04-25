@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +18,7 @@ public class UserSessionService {
     private long jwtExpiration;
 
     @Transactional
-    public UserSession createSession(UUID usrId, String accessToken, String refreshToken,
+    public UserSession createSession(Long usrId, String accessToken, String refreshToken,
                                      String ipAddress, String userAgent) {
         UserSession session = UserSession.builder()
                 .usrId(usrId)
@@ -46,7 +45,7 @@ public class UserSessionService {
     }
 
     @Transactional
-    public void invalidateAllUserSessions(UUID usrId) {
+    public void invalidateAllUserSessions(Long usrId) {
         userSessionRepository.deleteAllByUsrId(usrId);
     }
 
