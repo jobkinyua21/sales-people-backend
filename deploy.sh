@@ -9,15 +9,15 @@ rm -r target/*
 mvn clean install || { echo "Maven build failed! Fix issues and retry."; exit 1; }
 
 echo "Killing running application"
-pkill -f "pos-system"
+pkill -f "sales-people"
 sleep 2  # Allow process to fully stop
 
 echo "Starting sales-people application..."
-nohup java -jar target/pos-system-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+nohup java -jar target/sales-people-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
 
 sleep 2  # Give the app time to start
 
-if pgrep -f "pos-system-0.0.1-SNAPSHOT.jar" > /dev/null; then
+if pgrep -f "sales-people-0.0.1-SNAPSHOT.jar" > /dev/null; then
     sleep 10
     echo "Application started successfully."
 else
