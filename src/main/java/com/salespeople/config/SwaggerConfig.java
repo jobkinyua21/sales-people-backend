@@ -23,7 +23,7 @@ import java.util.List;
 )
 public class SwaggerConfig {
 
-    @Value("${server.port:8080}")
+    @Value("${server.port:9095}")
     private String serverPort;
 
     @Bean
@@ -31,13 +31,13 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
                 .info(new Info()
-                        .title("POS System API")
-                        .description("Multi-tenant Point of Sale System API Documentation")
+                        .title("Sales People API")
+                        .description("Sales People System API Documentation")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("POS System Support")
-                                .email("support@possystem.com")
-                                .url("https://possystem.com"))
+                                .name("Sales People Support")
+                                .email("support@salespeople.app")
+                                .url("https://salespeople.app"))
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
@@ -46,7 +46,7 @@ public class SwaggerConfig {
                                 .url("http://localhost:" + serverPort)
                                 .description("Development Server"),
                         new Server()
-                                .url("https://api.possystem.com")
+                                .url("https://apisalespeople.swftapos.com")
                                 .description("Production Server")
                 ));
     }

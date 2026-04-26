@@ -87,7 +87,7 @@ mvn spring-boot:run
 
 4. **Access Swagger UI**
 
-Open browser: `http://localhost:8080/swagger-ui.html`
+Open browser: `http://localhost:9095/swagger-ui.html`
 
 ## Usage Guide
 

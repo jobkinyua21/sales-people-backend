@@ -30,7 +30,7 @@ public class FileStorageService {
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
-    @Value("${file.base-url:http://localhost:8080/api/v1/public/files}")
+    @Value("${file.base-url:https://apisalespeople.swftapos.com/api/v1/public/files}")
     private String baseUrl;
 
     @Transactional
