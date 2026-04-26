@@ -19,6 +19,7 @@ public class UserPrincipal implements UserDetails {
     private final String firstName;
     private final String lastName;
     private final Integer staffNumber;
+    private final String userType;
     private final Set<GrantedAuthority> authorities;
     private final boolean deleted;
 
@@ -29,9 +30,10 @@ public class UserPrincipal implements UserDetails {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.staffNumber = user.getStaffNumber();
+        this.userType = user.getUserType() != null ? user.getUserType() : "SALES_PERSON";
         this.deleted = Boolean.TRUE.equals(user.getDeleted()) || Boolean.TRUE.equals(user.getSoftDelete());
         this.authorities = new HashSet<>();
-        this.authorities.add(new SimpleGrantedAuthority("ROLE_SALES_PERSON"));
+        this.authorities.add(new SimpleGrantedAuthority("ROLE_" + this.userType));
     }
 
     @Override

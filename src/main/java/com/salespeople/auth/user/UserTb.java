@@ -56,6 +56,10 @@ public class UserTb {
     @Builder.Default
     private Boolean deleted = false;
 
+    @Column(name = "user_type", length = 50, columnDefinition = "varchar(50) default 'SALES_PERSON'")
+    @Builder.Default
+    private String userType = "SALES_PERSON";
+
     // failed_login_attempts and locked_until added for account lockout support
     @Column(name = "failed_login_attempts", columnDefinition = "integer default 0")
     @Builder.Default
