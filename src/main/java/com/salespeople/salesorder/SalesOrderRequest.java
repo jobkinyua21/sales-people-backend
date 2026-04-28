@@ -12,6 +12,8 @@ import java.util.List;
 @Data
 public class SalesOrderRequest {
 
+    private Long salesOrderHeaderId; // if present, update existing order
+
     @NotNull(message = "Customer ID is required")
     private Long customerId;
 

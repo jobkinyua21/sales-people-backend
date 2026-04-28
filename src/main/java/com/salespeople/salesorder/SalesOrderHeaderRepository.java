@@ -6,12 +6,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 public interface SalesOrderHeaderRepository extends JpaRepository<SalesOrderHeader, Long> {
 
     Optional<SalesOrderHeader> findBySalesOrderNumber(Long salesOrderNumber);
+
+    List<SalesOrderHeader> findBySalesPersonNumberAndSalesOrderDateAndStatus(
+            Integer salesPersonNumber, LocalDate salesOrderDate, SalesOrderStatus status);
 
     @Query("""
             SELECT h FROM SalesOrderHeader h

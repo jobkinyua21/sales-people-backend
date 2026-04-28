@@ -32,9 +32,10 @@ public class SalesOrderHeader {
     @Column(name = "sales_person_number")
     private Integer salesPersonNumber;
 
+    @Convert(converter = SalesOrderStatusConverter.class)
     @Column(name = "status", length = 200)
     @Builder.Default
-    private String status = "New";
+    private SalesOrderStatus status = SalesOrderStatus.NEW;
 
     @Column(name = "sales_order_date", nullable = false)
     private LocalDate salesOrderDate;

@@ -34,6 +34,10 @@ public class SalesOrderService {
 
     @Transactional
     public SalesOrderResponse createOrder(SalesOrderRequest request) {
+        if (request.getSalesOrderHeaderId() != null) {
+            return updateOrder(request);
+        }
+
         var principal = SecurityContextUtil.getCurrentPrincipal();
         String currentUser = principal.getUsername();
         Integer salesPersonNumber = principal.getStaffNumber();
@@ -54,7 +58,7 @@ public class SalesOrderService {
                 .customerId(String.valueOf(customer.getCustomerId()))
                 .salesPersonNumber(salesPersonNumber)
                 .createdBy(currentUser)
-                .status("New")
+                .status(SalesOrderStatus.NEW)
                 .discount(BigDecimal.ZERO)
                 .build();
 
@@ -85,6 +89,56 @@ public class SalesOrderService {
         headerRepository.save(savedHeader);
 
         return toResponse(savedHeader, lines);
+    }
+
+    @Transactional
+    public SalesOrderResponse updateOrder(SalesOrderRequest request) {
+        var principal = SecurityContextUtil.getCurrentPrincipal();
+        String currentUser = principal.getUsername();
+
+        SalesOrderHeader header = headerRepository.findById(request.getSalesOrderHeaderId())
+                .orElseThrow(() -> new IllegalArgumentException("Sales order not found"));
+
+        if (header.getStatus() != SalesOrderStatus.NEW) {
+            throw new IllegalArgumentException("Only NEW orders can be edited");
+        }
+
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+
+        if (Boolean.TRUE.equals(customer.getDeleted())) {
+            throw new IllegalArgumentException("Customer not found");
+        }
+
+        // Update header fields
+        header.setSaleOrderType(request.getSaleOrderType());
+        header.setSalesOrderDate(request.getSalesOrderDate());
+        header.setCustomerName(customer.getCustomerOutletName());
+        header.setPhoneNumber(customer.getCustomerContact());
+        header.setCustomerId(String.valueOf(customer.getCustomerId()));
+
+        // Replace all lines
+        lineRepository.deleteBySalesOrderNumber(header.getSalesOrderNumber());
+
+        List<SalesOrderLine> lines = buildLines(request.getLines(), header, currentUser);
+        lineRepository.saveAll(lines);
+
+        // Recompute totals
+        BigDecimal orderTotal = lines.stream()
+                .map(l -> l.getTotal() != null ? l.getTotal() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalDiscount = lines.stream()
+                .map(l -> l.getDiscountValue() != null ? l.getDiscountValue() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        header.setSalesOrderTotalValue(orderTotal);
+        header.setTotal(orderTotal);
+        header.setDiscount(totalDiscount);
+        header.setNumberOfItems(lines.size());
+        headerRepository.save(header);
+
+        return toResponse(header, lines);
     }
 
     private List<SalesOrderLine> buildLines(List<SalesOrderLineRequest> lineRequests,
@@ -142,6 +196,15 @@ public class SalesOrderService {
     }
 
     public ListResponse<SalesOrderResponse> fetch(SalesOrderFetchRequest request) {
+        var principal = SecurityContextUtil.getCurrentPrincipal();
+        boolean isAdmin = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        // Sales person always sees only their own orders; admin can filter by any
+        Integer salesPersonNumber = isAdmin
+                ? request.getSalesPersonNumber()
+                : principal.getStaffNumber();
+
         if (request.getSalesOrderHeaderId() != null) {
             SalesOrderHeader header = headerRepository.findById(request.getSalesOrderHeaderId())
                     .orElseThrow(() -> new IllegalArgumentException("Sales order not found"));
@@ -156,9 +219,11 @@ public class SalesOrderService {
             return ListResponse.of(List.of(toResponse(header, lines)));
         }
 
+        String statusFilter = request.getStatus() != null ? request.getStatus() : null;
+
         if (request.getLimit() == null) {
             List<SalesOrderHeader> all = headerRepository.searchAll(
-                    request.getSalesPersonNumber(), request.getStatus(), request.getSearch());
+                    salesPersonNumber, statusFilter, request.getSearch());
             return ListResponse.of(all.stream()
                     .map(h -> toResponse(h, lineRepository.findBySalesOrderNumber(h.getSalesOrderNumber())))
                     .toList());
@@ -166,7 +231,7 @@ public class SalesOrderService {
 
         PageRequest pageRequest = PageRequest.of(request.getStart(), request.getLimit());
         Page<SalesOrderHeader> page = headerRepository.searchAll(
-                request.getSalesPersonNumber(), request.getStatus(), request.getSearch(), pageRequest);
+                salesPersonNumber, statusFilter, request.getSearch(), pageRequest);
         return ListResponse.from(page.map(
                 h -> toResponse(h, lineRepository.findBySalesOrderNumber(h.getSalesOrderNumber()))));
     }
@@ -176,14 +241,17 @@ public class SalesOrderService {
         SalesOrderHeader header = headerRepository.findById(salesOrderHeaderId)
                 .orElseThrow(() -> new IllegalArgumentException("Sales order not found"));
 
-        if ("Posted".equalsIgnoreCase(header.getStatus())) {
+        if (header.getStatus() == SalesOrderStatus.POSTED) {
             throw new IllegalArgumentException("Posted orders cannot be cancelled");
         }
-        if ("Cancelled".equalsIgnoreCase(header.getStatus())) {
+        if (header.getStatus() == SalesOrderStatus.CANCELLED) {
             throw new IllegalArgumentException("Order is already cancelled");
         }
+        if (header.getStatus() == SalesOrderStatus.PENDING || header.getStatus() == SalesOrderStatus.APPROVED) {
+            throw new IllegalArgumentException("Cannot cancel an order that is already in a batch");
+        }
 
-        header.setStatus("Cancelled");
+        header.setStatus(SalesOrderStatus.CANCELLED);
         headerRepository.save(header);
 
         List<SalesOrderLine> lines = lineRepository.findBySalesOrderNumber(header.getSalesOrderNumber());

@@ -3,6 +3,7 @@ package com.salespeople.batchorder;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Getter
@@ -35,6 +36,9 @@ public class SalesPersonBatchOrder {
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private SalesPersonBatchOrderStatus status = SalesPersonBatchOrderStatus.PENDING;
+
+    @Column(name = "order_date")
+    private LocalDate orderDate;
 
     // Manager who reviewed this order
     @Column(name = "reviewed_by", length = 200)

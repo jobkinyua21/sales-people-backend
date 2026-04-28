@@ -16,7 +16,7 @@ public class SalesOrderResponse {
     private Long salesOrderNumber;
     private String saleOrderType;
     private Integer salesPersonNumber;
-    private String status;
+    private SalesOrderStatus status;
     private LocalDate salesOrderDate;
     private OffsetDateTime entryDate;
     private String customerName;
