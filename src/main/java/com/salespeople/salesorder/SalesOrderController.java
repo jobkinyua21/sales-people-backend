@@ -9,6 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/sales-orders")
 @RequiredArgsConstructor
@@ -35,5 +38,12 @@ public class SalesOrderController {
     public ResponseEntity<ApiResponse<SalesOrderResponse>> cancel(@PathVariable Long id) {
         SalesOrderResponse response = salesOrderService.cancelOrder(id);
         return ResponseEntity.ok(ApiResponse.success(response, "Sales order cancelled"));
+    }
+
+    @GetMapping("/unbatched-dates")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<LocalDate>>> unbatchedDates() {
+        List<LocalDate> dates = salesOrderService.getUnbatchedOrderDates();
+        return ResponseEntity.ok(ApiResponse.success(dates, "Unbatched order dates fetched"));
     }
 }

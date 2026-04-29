@@ -17,6 +17,18 @@ public interface SalesOrderHeaderRepository extends JpaRepository<SalesOrderHead
     List<SalesOrderHeader> findBySalesPersonNumberAndSalesOrderDateAndStatus(
             Integer salesPersonNumber, LocalDate salesOrderDate, SalesOrderStatus status);
 
+    @Query(value = """
+            SELECT DISTINCT h.sales_order_date FROM public.sales_order_headers h
+            WHERE h.sales_person_number = :salesPersonNumber
+            AND h.status = 'NEW'
+            AND NOT EXISTS (
+                SELECT 1 FROM public.sale_person_batch_order b
+                WHERE b.sales_order_header_id = h.sales_order_header_id
+            )
+            ORDER BY h.sales_order_date ASC
+            """, nativeQuery = true)
+    List<java.sql.Date> findUnbatchedNewOrderDates(@Param("salesPersonNumber") Integer salesPersonNumber);
+
     @Query("""
             SELECT h FROM SalesOrderHeader h
             WHERE (:salesPersonNumber IS NULL OR h.salesPersonNumber = :salesPersonNumber)

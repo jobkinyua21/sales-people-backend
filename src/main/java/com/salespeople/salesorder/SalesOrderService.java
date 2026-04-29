@@ -261,6 +261,13 @@ public class SalesOrderService {
         return toResponse(header, lines);
     }
 
+    public List<LocalDate> getUnbatchedOrderDates() {
+        Integer staffNumber = SecurityContextUtil.getCurrentPrincipal().getStaffNumber();
+        return headerRepository.findUnbatchedNewOrderDates(staffNumber).stream()
+                .map(java.sql.Date::toLocalDate)
+                .toList();
+    }
+
     // ==================== MAPPERS ====================
 
     private SalesOrderResponse toResponse(SalesOrderHeader h, List<SalesOrderLine> lines) {

@@ -32,7 +32,7 @@ public class SalesOrderHeader {
     @Column(name = "sales_person_number")
     private Integer salesPersonNumber;
 
-    @Convert(converter = SalesOrderStatusConverter.class)
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 200)
     @Builder.Default
     private SalesOrderStatus status = SalesOrderStatus.NEW;

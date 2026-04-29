@@ -148,11 +148,25 @@ public class SalesPersonBatchOrderService {
 
     public List<SalesPersonBatchOrderResponse> fetchMyBatches() {
         Integer staffNumber = SecurityContextUtil.getCurrentPrincipal().getStaffNumber();
+        if (staffNumber == null) {
+            return List.of();
+        }
         SalesPerson salesPerson = salesPersonRepository.findByStaffId(staffNumber).orElse(null);
         BigDecimal orderLimit = salesPerson != null ? salesPerson.getOrderLimit() : null;
 
-        return batchOrderRepository.findBySalesPersonNumber(staffNumber).stream()
-                .map(e -> toResponse(e, orderLimit, null))
+        List<SalesPersonBatchOrder> entries = batchOrderRepository.findBySalesPersonNumber(staffNumber);
+
+        // Compute batchTotal per batchRef by summing the linked sales order totals
+        java.util.Map<String, BigDecimal> totalsPerBatch = new java.util.HashMap<>();
+        for (SalesPersonBatchOrder entry : entries) {
+            salesOrderHeaderRepository.findById(entry.getSalesOrderHeaderId()).ifPresent(header -> {
+                BigDecimal orderTotal = header.getTotal() != null ? header.getTotal() : BigDecimal.ZERO;
+                totalsPerBatch.merge(entry.getBatchRef(), orderTotal, BigDecimal::add);
+            });
+        }
+
+        return entries.stream()
+                .map(e -> toResponse(e, orderLimit, totalsPerBatch.get(e.getBatchRef())))
                 .toList();
     }
 

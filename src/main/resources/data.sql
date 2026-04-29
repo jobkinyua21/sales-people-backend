@@ -1,3 +1,13 @@
+-- Migrate sales_order_headers status to uppercase enum values
+UPDATE public.sales_order_headers SET status = 'NEW'        WHERE status = 'New';
+UPDATE public.sales_order_headers SET status = 'PENDING'    WHERE status = 'Pending';
+UPDATE public.sales_order_headers SET status = 'APPROVED'   WHERE status = 'Approved';
+UPDATE public.sales_order_headers SET status = 'REJECTED'   WHERE status = 'Rejected';
+UPDATE public.sales_order_headers SET status = 'POSTED'     WHERE status = 'Posted';
+UPDATE public.sales_order_headers SET status = 'CANCELLED'  WHERE status = 'Cancelled';
+UPDATE public.sales_order_headers SET status = 'ARCHIVED'   WHERE status = 'Archived';
+UPDATE public.sales_order_headers SET status = 'IN_TRANSIT' WHERE status = 'In Transit';
+
 -- Seed message templates (only insert if not already present)
 
 INSERT INTO sales_people.message_template (mst_name, mst_description, mst_email, mst_sms, mst_subject, mst_type, mst_status, mst_content, created_at, updated_at)
